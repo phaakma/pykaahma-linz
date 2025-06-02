@@ -15,12 +15,13 @@ The author is happy to take feedback and consider suggestions and code contribut
 
 Documentation is non-existent at the moment, but here is the basic approach so far.  
 
-If you are using the code directly rather than installing from PyPi (once it is uploaded to there), run the following to install the package locally in editable mode.
-```bash
-pip install -e .
-```
+> The following commands are for the UV python package manager which is what the author is using. Adjust as necessary if you are using a different package manager.  
+
+Run the following in a command terminal to install the UV virtual environment and install the pykaahma-linz package locally in editable mode. Ensure that the command terminal does not have any activated python environment already.  
+
 Or, if using UV package manager:  
 ```bash
+uv sync
 uv pip install -e .  
 ```  
 

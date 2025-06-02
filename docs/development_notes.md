@@ -2,6 +2,9 @@
 
 These are just general notes for the author to help remember design choices, rabbit holes and how they panned out, etc.  
 
+## Installation  
+When I run ```uv sync``` and ```uv pip install ie.``` on a new cloned copy, if I have a python environment activated already in my terminal it seems to do odd things sometimes. VS Code sometimes activates automatically depending on settings. And sometimes those settings vary between PowerShell and the standard Command Prompt. So I find it best to ensure I open a separate Command Prompt window with nothing activated, run those initial commands there, and then open up VS Code and any terminal windows.  
+
 ## Development using Jupyter Notebooks  
 I got the following tips from Cookie Cutter Data Science.  
 [Cookie Cutter Data Science](https://cookiecutter-data-science.drivendata.org/)  
