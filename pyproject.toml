@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "Interact with LINZ Data Service."
 keywords = ["kaahma", "koordinates", "LINZ", "geospatial", "open data", "API", "GIS"]
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.10"
 dependencies = [
     "geopandas>=1.0.1",
     "pandas>=2.2.3",
