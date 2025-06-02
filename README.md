@@ -18,8 +18,7 @@ Documentation is non-existent at the moment, but here is the basic approach so f
 > The following commands are for the UV python package manager which is what the author is using. Adjust as necessary if you are using a different package manager.  
 
 Run the following in a command terminal to install the UV virtual environment and install the pykaahma-linz package locally in editable mode. Ensure that the command terminal does not have any activated python environment already.  
-
-Or, if using UV package manager:  
+ 
 ```bash
 uv sync
 uv pip install -e .  

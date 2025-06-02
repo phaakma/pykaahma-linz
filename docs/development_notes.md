@@ -24,6 +24,17 @@ from k_data_helpers import KServer
 ```  
 And it would hot reload any changes I made while developing.
 
+## Koordinates API  
+
+### Export API  
+The export api doesn't appear to have an option for applying a cql_filter or any similar filter. Only extent. The extent appears to have to be a geojson geometry object. Note that this is just the geometry part, not the properties or collection. And it would have to be in WGS84. I might look at ways to handle passing in geometry objects of different types, such as from a geopandas geometry, and behind the scenes just handling that and converting to the corrrect format.  
+
+Also, the export API treats the extent as a crop, and so features will be clipped. This may not be desired in all situations, e.g. clipping Property Parcels is not usually a good thing as someone may inadvertantly think that that is the actually parcel geometry, not realising it was clipped. The question is: how to handle this? Just warn the user in documentation and leave it up to them? Apply a buffer and do some post-processing? I'm inclined to do less, let the system supply as it is designed, and educate the user. This does imply the end user needs to do a little bit extra work but I would rather the user explicitly get the output and the module logic not get in the way.  
+
+It does appear to allow generating an export of multiple items at once. E.g. you could request several layers in one zipped file geodatabase. Currently, this wrapper only supports one at a time, because I didn't realise at the time you could do multiple, so this would be a good enhancement for the future. The current approach is based off starting with an item and downloading that. So a multi item download would need to be initiated by a higher order class, perhaps the ContentManager?  
+
+Need to think about how a user would most likely pass in the parameters for a multi download without constructing the whole list verbosely, but allowing them to do that if they wish.  
+
 ## Notes on design choices  
 
 ### OWSLib  

@@ -13,7 +13,6 @@ import logging
 logger = logging.getLogger(__name__)
 
 # --- Configuration ---
-#DEFAULT_BASE_URL = "https://data.linz.govt.nz/services/wfs"
 DEFAULT_PAGE_COUNT = 1000  # Number of features per page request
 
 # Default WFS parameters
@@ -96,6 +95,8 @@ def download_wfs_data(
     api_key: str,
     srsName: str = DEFAULT_SRSNAME,
     cql_filter: str = None,
+    count = None,
+    page_count: int = DEFAULT_PAGE_COUNT,
     **other_wfs_params,
 ) -> dict:
     """
@@ -110,8 +111,8 @@ def download_wfs_data(
         srsName (str, optional): Spatial Reference System name (e.g., "EPSG:2193").
                                 Defaults to "EPSG:2193".
         cql_filter (str, optional): CQL filter to apply to the WFS request.
-            Defaults to None. If provided, it is added
-            to the other_wfs_params as 'cql_filter'.
+            Defaults to None. 
+        count (int, optional): Maximum number of features to fetch.
         **other_wfs_params: Additional WFS parameters (e.g., cql_filter="id='AL215'").
                             These are passed directly to the WFS request.
 
@@ -133,7 +134,7 @@ def download_wfs_data(
     headers = {"Authorization": f"key {api_key}"}
     all_features = []
     start_index = 0
-    page_count = other_wfs_params.get("count", DEFAULT_PAGE_COUNT)
+    page_count = min(page_count, count) if count is not None else page_count
     crs_info = None
     total_features_service_reported = None
 
@@ -146,7 +147,7 @@ def download_wfs_data(
 
     pages_fetched = 0  # Track number of pages fetched to prevent infinite loops
     while pages_fetched < MAX_PAGE_FETCHES:
-        logger.debug(f"Pages fetched: {pages_fetched}, max: {MAX_PAGE_FETCHES}")
+        logger.debug(f"Pages fetched: {pages_fetched} of max: {MAX_PAGE_FETCHES}")
         pages_fetched += 1
         wfs_request_params = {
             "service": DEFAULT_WFS_SERVICE,
@@ -212,6 +213,12 @@ def download_wfs_data(
         if len(features_on_page) < page_count:
             logger.debug(
                 f"Last page fetched for '{typeNames}' (received {len(features_on_page)} features, requested up to {page_count})."
+            )
+            break
+        # Stop if max count is set and reached
+        if count is not None and len(all_features) >= count:
+            logger.debug(
+                f"Reached maximum count of {count} features for '{typeNames}'. Stopping download."
             )
             break
 

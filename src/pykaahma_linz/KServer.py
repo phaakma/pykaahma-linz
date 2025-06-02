@@ -9,6 +9,7 @@ import logging
 from dotenv import load_dotenv
 from pykaahma_linz.ContentManager import ContentManager
 from pykaahma_linz.CustomErrors import KServerError, KServerBadRequestError
+import httpx
 
 logger = logging.getLogger(__name__)
 load_dotenv()
@@ -73,29 +74,42 @@ class KServer:
             self._content_manager = ContentManager(self)
         return self._content_manager
 
-    def _get(self, url: str, params: dict = None):
+    def get(self, url: str, params: dict = None):
         """
         Makes a GET request to the specified URL with the provided parameters.
         Injects the API key into the request headers.
-
-        Args:
-            url (str): The URL to send the GET request to.
-            params (dict): Optional parameters to include in the request.
-
-        Returns:
-            dict: The JSON response from the server.
-
-        Raises:
-            KServerBadRequestError: If the request fails with a 400 status code.
-            KServerError: For other HTTP errors.
         """
         headers = {"Authorization": f"key {self._api_key}"}
         logger.debug(f"Making kserver GET request to {url} with params {params}")
-        response = requests.get(url, headers=headers, params=params)
+        try:
+            response = httpx.get(url, headers=headers, params=params, timeout=30)
+        except httpx.RequestError as exc:
+            logger.error(f"An error occurred while requesting {exc.request.url!r}.")
+            raise KServerError(str(exc)) from exc
+
         if response.status_code == 400:
             raise KServerBadRequestError(response.text)
         response.raise_for_status()
         return response.json()
+
+    async def async_get(self, url: str, params: dict = None):
+        """
+        Makes an async GET request to the specified URL with the provided parameters.
+        Injects the API key into the request headers.
+        """
+        headers = {"Authorization": f"key {self._api_key}"}
+        logger.debug(f"Making async kserver GET request to {url} with params {params}")
+        async with httpx.AsyncClient(timeout=30) as client:
+            try:
+                response = await client.get(url, headers=headers, params=params)
+            except httpx.RequestError as exc:
+                logger.error(f"An error occurred while requesting {exc.request.url!r}.")
+                raise KServerError(str(exc)) from exc
+
+            if response.status_code == 400:
+                raise KServerBadRequestError(response.text)
+            response.raise_for_status()
+            return response.json()
 
     def reset(self):
         """
