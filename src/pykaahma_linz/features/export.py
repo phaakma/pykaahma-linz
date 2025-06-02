@@ -37,25 +37,38 @@ def validate_export_params(
     api_url: str,
     api_key: str,
     id: str,
-    export_format: str = "applicaton/x-ogc-filegdb",
+    data_type: str,  # 'layer' or 'table' so far...
+    kind: str,
+    export_format: str,
     crs: str = None,
     extent: dict = None,
     **kwargs,
 ):
     # validation_url = f"{requests_url}validate/"
     logger.info("Validating export parameters")
+    logger.info(data_type)
 
     api_url = _ensure_ending_slash(api_url)
-    download_url = f"{api_url}layers/"
+    if data_type == "layer":
+        download_url = f"{api_url}layers/"
+    elif data_type == "table":
+        download_url = f"{api_url}tables/"
+    else:
+        raise ValueError(f"Unsupported or not implemented data type: {data_type}")
     validation_url = f"{api_url}exports/validate/"
+
+    logger.debug(f"{download_url=}")
 
     data = {
         "items": [{"item": f"{download_url}{id}/"}],
-        "formats": {"vector": export_format},
-        "crs": crs,
-        "extent": extent,
+        "formats": {f"{kind}": export_format},
         **kwargs,
     }
+
+    if data_type == "layer" and crs:
+        data["crs"] = crs
+    if data_type == "layer" and extent:
+        data["extent"] = extent
 
     logger.debug(f"{data=}")
 
@@ -102,6 +115,8 @@ def request_export(
     api_url: str,
     api_key: str,
     id: str,
+    data_type: str,  # 'layer' or 'table' so far...
+    kind: str,
     export_format: str,
     crs: str = None,
     extent: dict = None,
@@ -112,15 +127,24 @@ def request_export(
 
     api_url = _ensure_ending_slash(api_url)
     export_url = f"{api_url}exports/"
-    download_url = f"{api_url}layers/"
+    if data_type == "layer":
+        download_url = f"{api_url}layers/"
+    elif data_type == "table":
+        download_url = f"{api_url}tables/"
+    else:
+        raise ValueError(f"Unsupported or not implemented data type: {data_type}")
+    logger.debug(f"{download_url=}")
 
     data = {
         "items": [{"item": f"{download_url}{id}/"}],
-        "formats": {"vector": export_format},
-        "crs": crs,
-        "extent": extent,
+        "formats": {f"{kind}": export_format},
         **kwargs,
     }
+
+    if data_type == "layer" and crs:
+        data["crs"] = crs
+    if data_type == "layer" and extent:
+        data["extent"] = extent
 
     logger.debug(f"{data=}")
 
@@ -143,4 +167,3 @@ def request_export(
         raise KExportError(err)
 
     return json_response
-

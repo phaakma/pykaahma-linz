@@ -28,11 +28,9 @@ class KVectorItem(KItem):
         Args:
             item_dict (dict): A dictionary containing the item's details, typically from an API response.
         """
-        super().__init__(kserver, item_dict)
-        self.kind = "vector"
+        super().__init__(kserver, item_dict)        
         self._supports_changesets = None
         self._services = None
-        self._jobs = []
         logger.debug(
             f"Initializing KVectorItem with id: {self.id}, title: {self.title}"
         )
@@ -297,6 +295,8 @@ class KVectorItem(KItem):
             self._kserver._api_url,
             self._kserver._api_key,
             self.id,
+            self.type,
+            self.kind,
             export_format,
             crs,
             extent,
@@ -309,7 +309,7 @@ class KVectorItem(KItem):
         crs: str = None,
         extent: dict = None,
         poll_interval: int = 10,
-        timeout: int = 300,
+        timeout: int = 600,
         **kwargs,
     ):
         """
@@ -347,6 +347,8 @@ class KVectorItem(KItem):
             self._kserver._api_url,
             self._kserver._api_key,
             self.id,
+            self.type,
+            self.kind,
             export_format,
             crs=crs,
             extent=extent,
@@ -354,7 +356,7 @@ class KVectorItem(KItem):
         )
 
         job_result = JobResult(
-            export_request, self._kserver, poll_interval=5, timeout=600
+            export_request, self._kserver, poll_interval=poll_interval, timeout=timeout
         )
         self._jobs.append(job_result)
         logger.info(

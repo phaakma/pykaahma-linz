@@ -22,8 +22,10 @@ class KItem:
         self.id = item_dict.get("id")
         self.url = item_dict.get("url")
         self.type = item_dict.get("type")
+        self.kind = item_dict.get("kind")
         self.title = item_dict.get("title")
         self.description = item_dict.get("description")
+        self._jobs = []
 
     def __getattr__(self, item):
         """

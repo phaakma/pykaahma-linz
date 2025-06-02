@@ -7,7 +7,9 @@ import logging
 import json
 from datetime import datetime
 from pykaahma_linz.KItem import KItem
+from pykaahma_linz.JobResult import JobResult
 from .features import wfs as wfs_features
+from .features import export as export_features
 from .features.Conversion import json_to_df
 from pykaahma_linz.CustomErrors import KServerError
 
@@ -26,8 +28,7 @@ class KTableItem(KItem):
         Args:
             item_dict (dict): A dictionary containing the item's details, typically from an API response.
         """
-        super().__init__(kserver, item_dict)
-        self.kind = "vector" 
+        super().__init__(kserver, item_dict)        
         self._supports_changesets = None 
         self._services = None      
         logger.debug(f"Initializing KTableItem with id: {self.id}, title: {self.title}")
@@ -130,7 +131,7 @@ class KTableItem(KItem):
         result = wfs_features.download_wfs_data(
             url=self._wfs_url,
             api_key=self._kserver._api_key,
-            typeNames=f"table-{self.id}",            
+            typeNames=f"{self.type}-{self.id}",            
             cql_filter=cql_filter,
             **kwargs
         )
@@ -165,7 +166,7 @@ class KTableItem(KItem):
         result = wfs_features.download_wfs_data(
                 url=self._wfs_url,
                 api_key=self._kserver._api_key,
-                typeNames=f"table-{self.id}-changeset",
+                typeNames=f"{self.type}-{self.id}-changeset",
                 viewparams=viewparams,
                 cql_filter=cql_filter,
                 **kwargs
@@ -185,7 +186,7 @@ class KTableItem(KItem):
 
         if self._services is None:
             logger.debug(f"Fetching services for item with id: {self.id}")
-            url = self._kserver._api_url + f"layers/{self.id}/services/"
+            url = self._kserver._api_url + f"{self.type}/{self.id}/services/"
             self._services = self._kserver.get(url)
         logger.debug(f"Returning {len(self._services)} services for item with id: {self.id}")
         return self._services
@@ -200,6 +201,118 @@ class KTableItem(KItem):
         self._services = None
         self._raw_json = None
 
+    def _resolve_export_format(self, export_format: str):
+        """
+        Validates if the export format is supported by the item.
+
+        Args:
+            export_format (str): The format to validate.
+
+        Returns:
+            bool: True if the format is supported, False otherwise.
+        """
+        logger.debug(
+            f"Validating export format: {export_format} for item with id: {self.id}"
+        )
+        mimetype = None
+
+        # check if the export format is either any of the names or mimetypes in the example_formats
+        export_format = export_format.lower()
+
+        # Handle special cases for export formats geopackage and sqlite as it seems a
+        # strange string argument to expect a user to pass in
+        if export_format in ("geopackage", "sqlite"):
+            export_format = "GeoPackage / SQLite".lower()
+
+        for f in self.export_formats:
+            if export_format in (f["name"].lower(), f["mimetype"].lower()):
+                mimetype = f["mimetype"]
+
+        if mimetype is None:
+            raise ValueError(
+                f"Export format {export_format} is not supported by this item. Refer supported formats using : itm.export_formats"
+            )
+
+        logger.debug(f"Resolved export format: {mimetype} from {export_format}")
+        return mimetype
+
+    def validate_export_request(
+        self,
+        export_format: str,
+        **kwargs,
+    ):
+
+        export_format = self._resolve_export_format(export_format)
+
+        # log out all the input parameters including kwargs
+        logger.info(
+            f"Validating export request for item with id: {self.id}, {export_format=}, {kwargs=}"
+        )
+
+        return export_features.validate_export_params(
+            self._kserver._api_url,
+            self._kserver._api_key,
+            self.id,
+            self.type,
+            self.kind,
+            export_format,
+            **kwargs,
+        )
+
+    def export(
+        self,
+        export_format: str,
+        poll_interval: int = 10,
+        timeout: int = 600,
+        **kwargs,
+    ):
+        """
+        Exports the item in the specified format.
+
+        Args:
+            export_format (str): The format to export the item in.
+            crs (str, optional): The coordinate reference system to use for the export.
+            extent (dict, optional): The extent to use for the export. Should be a GeoJSON dictionary.
+            **kwargs: Additional parameters for the export request.
+
+        Returns:
+            JobResult: A JobResult instance containing the export job details.
+        """
+        logger.debug(f"Exporting item with id: {self.id} in format: {export_format}")
+
+        export_format = self._resolve_export_format(export_format)
+
+        validate_export_request = self.validate_export_request(
+            export_format,
+            **kwargs,
+        )
+
+        if not validate_export_request:
+            logger.error(
+                f"Export validation failed for item with id: {self.id} in format: {export_format}"
+            )
+            raise ValueError(
+                f"Export validation failed for item with id: {self.id} in format: {export_format}"
+            )
+
+        export_request = export_features.request_export(
+            self._kserver._api_url,
+            self._kserver._api_key,
+            self.id,
+            self.type,
+            self.kind,
+            export_format,
+            **kwargs,
+        )
+
+        job_result = JobResult(
+            export_request, self._kserver, poll_interval=poll_interval, timeout=timeout
+        )
+        self._jobs.append(job_result)
+        logger.info(
+            f"Export job created for item with id: {self.id}, job id: {job_result.id}"
+        )
+        return job_result
 
     def __repr__(self):
         return f"KTableItem(id={self.id}, title={self.title}, type={self.type}, kind={self.kind})"

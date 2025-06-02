@@ -45,10 +45,12 @@ def test_validate_layer_export_params(layer_id:str = rail_station_layer_id, api_
     assert api_key, "LINZ_API_KEY must be set in your .env file"
     api_url = f"{DEFAULT_BASE_URL}services/api/{DEFAULT_API_VERSION}/"
     crs = "EPSG:2193"
-    format = "applicaton/x-ogc-filegdb"
+    export_format = "applicaton/x-ogc-filegdb"
+    data_type = "layer" 
+    kind = "vector"  
     
     result = validate_export_params(
-        api_url=api_url, api_key=api_key, id=layer_id, format=format, crs=crs
+        api_url=api_url, api_key=api_key, id=layer_id, data_type=data_type, kind=kind, export_format=export_format, crs=crs
     ) 
     assert isinstance(result, bool), "Result should be a boolean"
     assert result == True, "Download should be valid"
