@@ -148,7 +148,32 @@ class KVectorItem(KItem):
         logger.debug(f"Creating WFS service for item with id: {self.id}")
         wfs_service = self._kserver.wfs.operations
 
-    def query(self, cql_filter: str = None, **kwargs):
+    def query_json(self, cql_filter: str = None, srsName: str = None, **kwargs):
+        """
+        Executes a WFS query on the item and returns the result as JSON.
+
+        Args:
+            typeNames (str): The type names to query.
+            cql_filter (str): The CQL filter to apply to the query.
+            srsName (str): The spatial reference system name to use for the query.
+
+        Returns:
+            dict: The result of the WFS query in JSON format.
+        """
+        logger.debug(f"Executing WFS query for item with id: {self.id}")
+
+        result = wfs_features.download_wfs_data(
+            url=self._wfs_url,
+            api_key=self._kserver._api_key,
+            typeNames=f"{self.type}-{self.id}",
+            cql_filter=cql_filter,
+            srsName=srsName or f"EPSG:{self.epsg}" if self.epsg else None,
+            **kwargs,
+        )
+
+        return result
+
+    def query(self, cql_filter: str = None, srsName: str = None, **kwargs):
         """
         Executes a WFS query on the item.
 
@@ -160,12 +185,9 @@ class KVectorItem(KItem):
         """
         logger.debug(f"Executing WFS query for item with id: {self.id}")
 
-        result = wfs_features.download_wfs_data(
-            url=self._wfs_url,
-            api_key=self._kserver._api_key,
-            typeNames=f"layer-{self.id}",
+        result = self.query_json(
             cql_filter=cql_filter,
-            srsName=f"EPSG:{self.epsg}" if self.epsg else None,
+            srsName=srsName or f"EPSG:{self.epsg}" if self.epsg else None,
             **kwargs,
         )
 
