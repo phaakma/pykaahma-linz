@@ -6,13 +6,11 @@ A class to connect with a Koordinates server.
 import requests
 import os
 import logging
-from dotenv import load_dotenv
 from pykaahma_linz.ContentManager import ContentManager
 from pykaahma_linz.CustomErrors import KServerError, KServerBadRequestError
 import httpx
 
 logger = logging.getLogger(__name__)
-load_dotenv()
 
 DEFAULT_BASE_URL = "https://data.linz.govt.nz/"
 DEFAULT_API_VERSION = "v1.x"
