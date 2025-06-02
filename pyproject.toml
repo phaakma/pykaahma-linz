@@ -1,0 +1,22 @@
+[project]
+name = "pykaahma-linz"
+version = "0.1.0"
+description = "Interact with LINZ Data Service."
+keywords = ["kaahma", "koordinates", "LINZ", "geospatial", "open data", "API", "GIS"]
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "geopandas>=1.0.1",
+    "pandas>=2.2.3",
+    "requests>=2.32.3",
+    "tenacity>=9.1.2",
+    "typing>=3.10.0.0",
+]
+
+[dependency-groups]
+dev = [
+    "ipykernel>=6.29.5",
+    "pytest>=8.3.5",
+    "python-dotenv>=1.1.0",
+]
+
