@@ -15,6 +15,15 @@ The author is happy to take feedback and consider suggestions and code contribut
 
 Documentation is non-existent at the moment, but here is the basic approach so far.  
 
+If you are using the code directly rather than installing from PyPi (once it is uploaded to there), run the following to install the package locally in editable mode.
+```bash
+pip install -e .
+```
+Or, if using UV package manager:  
+```bash
+uv pip install -e .  
+```  
+
 * The KServer is the entry point, import that module.  
 * Create a KServer object, passing in an api key.  
 * Get a reference to an item using {kserver}.content.get({layer_id})
@@ -29,3 +38,12 @@ itm = linz.content.get(rail_station_layer_id)
 data = itm.query()
 data.head()
 ```
+
+## Tests  
+Tests are written using pytest. To run tests using UV:  
+
+```bash
+uv run -m pytest --log-cli-level=INFO
+```
+
+There is currently only one simple live test which requires a "LINZ_API_KEY" entry to exist in a .env file in the root project folder.  
