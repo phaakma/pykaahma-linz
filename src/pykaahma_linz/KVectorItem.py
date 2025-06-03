@@ -6,11 +6,12 @@ A class to represent a vector dataset.
 import logging
 import json
 from datetime import datetime
+import geopandas as gpd
 from pykaahma_linz.KItem import KItem
 from pykaahma_linz.JobResult import JobResult
 from .features import wfs as wfs_features
 from .features import export as export_features
-from .features.Conversion import geojson_to_gdf
+from .features.Conversion import geojson_to_gdf, gdf_to_single_polygon_geojson
 from pykaahma_linz.CustomErrors import KServerError
 
 logger = logging.getLogger(__name__)
@@ -329,7 +330,7 @@ class KVectorItem(KItem):
         self,
         export_format: str,
         crs: str = None,
-        extent: dict = None,
+        extent: dict | gpd.GeoDataFrame = None,
         poll_interval: int = 10,
         timeout: int = 600,
         **kwargs,
@@ -347,6 +348,12 @@ class KVectorItem(KItem):
             JobResult: A JobResult instance containing the export job details.
         """
         logger.debug(f"Exporting item with id: {self.id} in format: {export_format}")
+
+        if isinstance(extent, gpd.GeoDataFrame):
+            logger.debug(
+                f"Converting extent GeoDataFrame to GeoJSON for item with id: {self.id}"
+            )
+            extent = gdf_to_single_polygon_geojson(extent)
 
         export_format = self._resolve_export_format(export_format)
 

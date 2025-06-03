@@ -147,3 +147,37 @@ def json_to_df(
                     )
 
     return df
+    
+
+def gdf_to_single_polygon_geojson(gdf: gpd.GeoDataFrame) -> dict[str, Any] | None:
+    """
+    Convert a GeoDataFrame to a single GeoJSON polygon geometry object.
+    Args:
+        gdf: A GeoDataFrame containing polygon geometries.
+    Returns:
+        A GeoJSON polygon geometry object or None if the GeoDataFrame is empty.
+    Raises:
+        ValueError: If the GeoDataFrame is empty or contains non-polygon geometries.
+    """
+    if gdf.empty:
+        raise ValueError("GeoDataFrame must at least one Polygon geometry.")
+
+    if not all(gdf.geometry.type == "Polygon"):
+        raise ValueError("GeoDataFrame must contain only Polygon geometries.")
+
+    #convert crs to EPSG:4326 if not already
+    if gdf.crs is None:
+        gdf.set_crs(epsg=4326, inplace=True)
+    elif gdf.crs.to_epsg() != 4326:
+        gdf = gdf.to_crs(epsg=4326)
+
+    # Union all geometries into a single geometry
+    single_geometry = gdf.unary_union
+    if single_geometry.is_empty:
+        raise ValueError("Resulting geometry is empty after union.")
+
+    geom = single_geometry.__geo_interface__
+
+    logger.info(geom)
+
+    return geom
