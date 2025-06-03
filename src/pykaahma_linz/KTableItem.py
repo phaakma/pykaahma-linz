@@ -160,9 +160,9 @@ class KTableItem(KItem):
         df = json_to_df(result, fields = self.fields)
         return df
 
-    def get_changeset(self, from_time: str, to_time: str = None, cql_filter: str = None, **kwargs):
+    def get_changeset_json(self, from_time: str, to_time: str = None, cql_filter: str = None, **kwargs):
         """
-        Retrieves a changeset for the item.
+        Retrieves a changeset for the item in JSON format.
 
         Args:
             from_time (str): The start time for the changeset query, ISO format.
@@ -172,7 +172,7 @@ class KTableItem(KItem):
             cql_filter (str): The CQL filter to apply to the changeset query.
 
         Returns:
-            dict: The changeset data.
+            dict: The changeset data in JSON format.
         """
         if not self.supports_changesets:
             logger.error(f"Item with id: {self.id} does not support changesets.")
@@ -189,6 +189,30 @@ class KTableItem(KItem):
                 api_key=self._kserver._api_key,
                 typeNames=f"{self.type}-{self.id}-changeset",
                 viewparams=viewparams,
+                cql_filter=cql_filter,
+                **kwargs
+            )
+        
+        return result
+
+    def get_changeset(self, from_time: str, to_time: str = None, cql_filter: str = None, **kwargs):
+        """
+        Retrieves a changeset for the item.
+
+        Args:
+            from_time (str): The start time for the changeset query, ISO format.
+                            example, 2015-05-15T04:25:25.334974
+            to_time (str, optional): The end time for the changeset query, ISO format.
+                            If not provided, the current time is used.
+            cql_filter (str): The CQL filter to apply to the changeset query.
+
+        Returns:
+            dict: The changeset data.
+        """
+
+        result = self.get_changeset_json(
+                from_time=from_time,
+                to_time=to_time,
                 cql_filter=cql_filter,
                 **kwargs
             )
