@@ -26,6 +26,11 @@ def geojson_to_gdf(
 
     logger.debug("Converting GeoJSON to GeoDataFrame...")
 
+    #if the geosjon is None, return an empty GeoDataFrame
+    if geojson is None:
+        logger.warning("Received None as geojson input, returning empty GeoDataFrame.")
+        return gpd.GeoDataFrame(columns=[], geometry=[])
+
     # Extract features from a FeatureCollection if needed
     if isinstance(geojson, dict) and geojson.get("type") == "FeatureCollection":
         features = geojson.get("features", [])
