@@ -203,21 +203,22 @@ class KVectorItem(KItem):
         gdf = geojson_to_gdf(result, epsg=self.epsg, fields=self.fields)
         return gdf
 
-    def get_changeset(
-        self, from_time: str, to_time: str = None, cql_filter: str = None, bbox: str | gpd.GeoDataFrame = None, **kwargs
-    ):
+    def get_changeset_json(
+        self, from_time: str, to_time: str = None, cql_filter: str = None, bbox: str | gpd.GeoDataFrame = None, **kwargs):
         """
-        Retrieves a changeset for the item.
-
+        Retrieves a changeset for the item in JSON format.
         Args:
             from_time (str): The start time for the changeset query, ISO format.
                             example, 2015-05-15T04:25:25.334974
             to_time (str, optional): The end time for the changeset query, ISO format.
                             If not provided, the current time is used.
             cql_filter (str): The CQL filter to apply to the changeset query.
-
+            bbox (str | gpd.GeoDataFrame, optional): The bounding box to apply to the changeset query.
+                bbox string must be in WGS84 and should be in the format "XMin,YMin,XMax,YMax,EPSG:4326"
+                If a GeoDataFrame is provided, it will be converted to a bounding box string in WGS84.
+            kwargs: Additional parameters for the WFS query.
         Returns:
-            dict: The changeset data.
+            dict: The changeset data in JSON format.
         """
         if not self.supports_changesets:
             logger.error(f"Item with id: {self.id} does not support changesets.")
@@ -244,6 +245,32 @@ class KVectorItem(KItem):
             viewparams=viewparams,
             cql_filter=cql_filter,
             srsName=f"EPSG:{self.epsg}" if self.epsg else None,
+            bbox=bbox,
+            **kwargs,
+        )
+        return result
+
+    def get_changeset(
+        self, from_time: str, to_time: str = None, cql_filter: str = None, bbox: str | gpd.GeoDataFrame = None, **kwargs
+    ):
+        """
+        Retrieves a changeset for the item.
+
+        Args:
+            from_time (str): The start time for the changeset query, ISO format.
+                            example, 2015-05-15T04:25:25.334974
+            to_time (str, optional): The end time for the changeset query, ISO format.
+                            If not provided, the current time is used.
+            cql_filter (str): The CQL filter to apply to the changeset query.
+
+        Returns:
+            dict: The changeset data.
+        """
+
+        result = self.get_changeset_json(
+            from_time=from_time,
+            to_time=to_time,
+            cql_filter=cql_filter,
             bbox=bbox,
             **kwargs,
         )
