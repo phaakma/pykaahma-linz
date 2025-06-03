@@ -181,3 +181,32 @@ def gdf_to_single_polygon_geojson(gdf: gpd.GeoDataFrame) -> dict[str, Any] | Non
     logger.info(geom)
 
     return geom
+
+
+def gdf_to_bbox(gdf: gpd.GeoDataFrame) -> str:
+    """
+    Convert a GeoDataFrame to a bounding box string in the format "XMin,YMin,XMax,YMax,EPSG:4326".
+    Args:
+        gdf: A GeoDataFrame containing geometries.
+    Returns:
+        A bounding box string in the format "XMin,YMin,XMax,YMax,EPSG:4326".
+    Raises:
+        ValueError: If the GeoDataFrame is empty or does not contain valid geometries.
+    """
+    if gdf.empty:
+        raise ValueError("GeoDataFrame must contain at least one geometry.")
+
+    if not all(gdf.geometry.type.isin(["Polygon", "MultiPolygon"])):
+        raise ValueError("GeoDataFrame must contain only Polygon or MultiPolygon geometries.")
+
+    # Ensure the GeoDataFrame is in EPSG:4326
+    if gdf.crs is None:
+        gdf.set_crs(epsg=4326, inplace=True)
+    elif gdf.crs.to_epsg() != 4326:
+        gdf = gdf.to_crs(epsg=4326)
+
+    # Calculate the bounding box
+    bounds = gdf.total_bounds  # returns (minx, miny, maxx, maxy)
+    bbox_string = f"{bounds[0]},{bounds[1]},{bounds[2]},{bounds[3]},EPSG:4326"
+
+    return bbox_string

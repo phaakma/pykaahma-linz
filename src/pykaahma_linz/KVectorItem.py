@@ -11,7 +11,7 @@ from pykaahma_linz.KItem import KItem
 from pykaahma_linz.JobResult import JobResult
 from .features import wfs as wfs_features
 from .features import export as export_features
-from .features.Conversion import geojson_to_gdf, gdf_to_single_polygon_geojson
+from .features.Conversion import geojson_to_gdf, gdf_to_single_polygon_geojson, gdf_to_bbox
 from pykaahma_linz.CustomErrors import KServerError
 
 logger = logging.getLogger(__name__)
@@ -149,7 +149,7 @@ class KVectorItem(KItem):
         logger.debug(f"Creating WFS service for item with id: {self.id}")
         wfs_service = self._kserver.wfs.operations
 
-    def query_json(self, cql_filter: str = None, srsName: str = None, **kwargs):
+    def query_json(self, cql_filter: str = None, srsName: str = None, bbox: str | gpd.GeoDataFrame = None, **kwargs):
         """
         Executes a WFS query on the item and returns the result as JSON.
 
@@ -163,18 +163,25 @@ class KVectorItem(KItem):
         """
         logger.debug(f"Executing WFS query for item with id: {self.id}")
 
+        if isinstance(bbox, gpd.GeoDataFrame):
+            logger.debug(
+                f"Converting bbox GeoDataFrame to GeoJSON for item with id: {self.id}"
+            )
+            bbox = gdf_to_bbox(bbox)
+
         result = wfs_features.download_wfs_data(
             url=self._wfs_url,
             api_key=self._kserver._api_key,
             typeNames=f"{self.type}-{self.id}",
             cql_filter=cql_filter,
             srsName=srsName or f"EPSG:{self.epsg}" if self.epsg else None,
+            bbox=bbox,
             **kwargs,
         )
 
         return result
 
-    def query(self, cql_filter: str = None, srsName: str = None, **kwargs):
+    def query(self, cql_filter: str = None, srsName: str = None, bbox: str | gdf.GeoDataFrame = None, **kwargs):
         """
         Executes a WFS query on the item.
 
@@ -189,6 +196,7 @@ class KVectorItem(KItem):
         result = self.query_json(
             cql_filter=cql_filter,
             srsName=srsName or f"EPSG:{self.epsg}" if self.epsg else None,
+            bbox=bbox,
             **kwargs,
         )
 
@@ -196,7 +204,7 @@ class KVectorItem(KItem):
         return gdf
 
     def get_changeset(
-        self, from_time: str, to_time: str = None, cql_filter: str = None, **kwargs
+        self, from_time: str, to_time: str = None, cql_filter: str = None, bbox: str | gpd.GeoDataFrame = None, **kwargs
     ):
         """
         Retrieves a changeset for the item.
@@ -223,6 +231,12 @@ class KVectorItem(KItem):
 
         viewparams = f"from:{from_time};to:{to_time}"
 
+        if isinstance(bbox, gpd.GeoDataFrame):
+            logger.debug(
+                f"Converting bbox GeoDataFrame to GeoJSON for item with id: {self.id}"
+            )
+            bbox = gdf_to_bbox(bbox)
+
         result = wfs_features.download_wfs_data(
             url=self._wfs_url,
             api_key=self._kserver._api_key,
@@ -230,6 +244,7 @@ class KVectorItem(KItem):
             viewparams=viewparams,
             cql_filter=cql_filter,
             srsName=f"EPSG:{self.epsg}" if self.epsg else None,
+            bbox=bbox,
             **kwargs,
         )
 
