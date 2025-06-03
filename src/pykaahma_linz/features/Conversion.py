@@ -1,17 +1,17 @@
 import geopandas as gpd
 import pandas as pd
 from shapely.geometry import shape
-from typing import Union, Dict, Any, List
+from typing import Any
 import logging
 
 logger = logging.getLogger(__name__)
 
 
 def geojson_to_gdf(
-    geojson: Union[Dict[str, Any], List[Dict[str, Any]]],
-    epsg: Union[str, int],
-    fields: Union[List[Dict[str, str]], None] = None,
-    ) -> gpd.GeoDataFrame:
+    geojson: dict[str, Any] | list[dict[str, Any]],
+    epsg: str | int,
+    fields: list[dict[str, str]] | None = None,
+) -> gpd.GeoDataFrame:
     """
     Convert GeoJSON features to a GeoDataFrame with enforced data types.
 
@@ -84,9 +84,10 @@ def geojson_to_gdf(
 
 
 def json_to_df(
-    json: Union[Dict[str, Any], List[Dict[str, Any]]],
-    fields: Union[List[Dict[str, str]], None] = None,
-    ) -> pd.DataFrame:
+    json: dict[str, Any] | list[dict[str, Any]],
+    fields: list[dict[str, str]] | None = None,
+) -> pd.DataFrame:
+
     """
     Convert GeoJSON features to a GeoDataFrame with enforced data types.
 
@@ -113,7 +114,7 @@ def json_to_df(
     # Flatten properties and extract geometry
     records = []
     for feature in features:
-        props = feature.get("properties", {})        
+        props = feature.get("properties", {})
         records.append(props)
     df = pd.DataFrame(records)
 

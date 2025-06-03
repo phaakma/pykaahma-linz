@@ -7,7 +7,6 @@ import os
 import time
 import asyncio
 import httpx
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -18,8 +17,8 @@ class JobResult:
         self._id = payload["id"]
         self._poll_interval = poll_interval
         self._timeout = timeout
-        self._last_response = payload  # Start with the initial state
-        self._kserver = kserver  # Store the KServer instance
+        self._last_response = payload
+        self._kserver = kserver
 
     @property
     def id(self) -> int:
@@ -31,12 +30,7 @@ class JobResult:
         return self._last_response.get("name", "unknown_name")
 
     @property
-    def status(self) -> str:
-        self._refresh()
-        return self._last_response.get("state")
-
-    @property
-    def download_url(self) -> Optional[str]:
+    def download_url(self) -> str | None:
         return self._last_response.get("download_url")
 
     @property
@@ -45,28 +39,24 @@ class JobResult:
         return self._last_response.get("state")
 
     @property
-    def progress(self) -> Optional[float]:
+    def progress(self) -> float | None:
         """Returns the progress of the job as a percentage."""
         return self._last_response.get("progress", None)
 
     @property
-    def created_at(self) -> Optional[str]:
+    def created_at(self) -> str | None:
         """Returns the creation time of the job."""
         return self._last_response.get("created_at", None)
-
-    def _refresh(self):
-        response = requests.get(self._job_url)
-        response.raise_for_status()
-        self._last_response = response.json()
 
     def to_dict(self) -> dict:
         return self._last_response
 
     def __str__(self) -> str:
+        self._refresh_sync()
         return (
             f"JobResult(id={self.id}, name='{self.name}', "
             f"status='{self._last_response.get('state')}', "
-            f"download_url={'set' if self.download_url else 'not set'})"
+            f"progress={self.progress})"
         )
 
     def _refresh_sync(self):
@@ -80,9 +70,9 @@ class JobResult:
     def output(self) -> dict:
         """Blocking: wait for the job to complete synchronously."""
         start = time.time()
-        # timeout the while loop if it takes more than ten minutes 
+        # timeout the while loop if it takes more than twenty minutes 
         # to complete
-        max_time = 600 # 10 minutes in seconds
+        max_time = 1200 # 20 minutes in seconds
 
         while True and time.time() - start < max_time:
             self._refresh_sync()
@@ -121,12 +111,12 @@ class JobResult:
 
         return self._last_response
 
-    def download(self, folder: str, file_name: Optional[str] = None) -> str:
+    def download(self, folder: str, file_name: str | None = None) -> str:
         """ 
         Waits for job to finish, then downloads the file synchronously.
         Args:
             folder (str): The folder where the file will be saved.
-            file_name (Optional[str]): The name of the file to save. If None, uses job name.
+            file_name (str | None): The name of the file to save. If None, uses job name.
         """
         
         self.output()  # ensure job is complete
@@ -153,7 +143,7 @@ class JobResult:
                     f.write(chunk)
         return file_path
 
-    async def download_async(self, folder: str, file_name: Optional[str] = None):
+    async def download_async(self, folder: str, file_name: str | None = None):
         """
         Waits for job to finish, then downloads the file asynchronously.
         Args:

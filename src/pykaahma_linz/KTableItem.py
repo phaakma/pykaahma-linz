@@ -207,7 +207,7 @@ class KTableItem(KItem):
 
         if self._services is None:
             logger.debug(f"Fetching services for item with id: {self.id}")
-            url = self._kserver._api_url + f"{self.type}/{self.id}/services/"
+            url = self._kserver._api_url + f"tables/{self.id}/services/"
             self._services = self._kserver.get(url)
         logger.debug(f"Returning {len(self._services)} services for item with id: {self.id}")
         return self._services
