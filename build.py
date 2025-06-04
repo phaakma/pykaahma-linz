@@ -16,7 +16,6 @@ def bump_version(version_str: str) -> str:
     micro += 1
     return f"{major}.{minor}.{micro}"
 
-
 def sync_and_bump_version():
     print("🔄 Reading and bumping version...")
     data = toml.load(PYPROJECT)
@@ -32,7 +31,6 @@ def sync_and_bump_version():
     # Update __version__.py
     VERSION_FILE.write_text(f'__version__ = "{new_version}"\n', encoding="utf-8")
     print(f"✅ __version__.py updated to {new_version}")
-
 
 def clean_dist():
     dist_dir = Path("dist")
@@ -73,15 +71,25 @@ def publish_package(stage: str):
     ], check=True)
     print(f"✅ Published to {index}.")
 
+def deploy_docs():
+    print("🌐 Deploying documentation to GitHub Pages...")
+    subprocess.run(["mkdocs", "build"], check=True)
+    subprocess.run(["mkdocs", "gh-deploy", "--clean"], check=True)
+    print("✅ Documentation deployed.")
+
 def main():
     parser = argparse.ArgumentParser(description="Build and optionally publish the package.")
     parser.add_argument("--stage", choices=["test", "prod"], default="test", help="Target registry: 'test' (default) or 'prod'")
+    parser.add_argument("--docs", action="store_true", help="Also deploy documentation to GitHub Pages")
     args = parser.parse_args()
 
     sync_and_bump_version()
     clean_dist()
     build_package()
     publish_package(args.stage)
+
+    if args.docs:
+        deploy_docs()
 
 if __name__ == "__main__":
     main()

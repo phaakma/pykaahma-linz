@@ -19,8 +19,22 @@ logger = logging.getLogger(__name__)
 
 class KTableItem(KItem):
     """
-    KTableItem is a class that represents a vector dataset.
-    It inherits from KItem and provides methods to interact with vector datasets.
+    Represents a table dataset item in the Koordinates system.
+
+    Inherits from KItem and provides methods to interact with table datasets, including
+    querying records, exporting data, and retrieving changesets.
+
+    Attributes:
+        _supports_changesets (bool or None): Whether the item supports changesets.
+        _services (list or None): Cached list of services for this item.
+        _kserver (KServer): The KServer instance this item belongs to.
+        _raw_json (dict): The raw JSON dictionary representing the item.
+        id (str): The unique identifier of the item.
+        type (str): The type of the item (should be 'table').
+        kind (str): The kind of the item (should be 'table').
+        title (str): The title of the item.
+        description (str): The description of the item.
+        _jobs (list): List of JobResult objects associated with this item.
     """
 
     def __init__(self, kserver: "KServer", item_dict: dict) -> None:

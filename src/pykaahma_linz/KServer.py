@@ -17,6 +17,20 @@ DEFAULT_API_VERSION = "v1.x"
 
 
 class KServer:
+    """
+    Client for connecting to a Koordinates server.
+
+    Provides methods for authenticating, accessing content, and making HTTP requests to the Koordinates API.
+    Used as the main entry point for interacting with Koordinates-hosted data.
+
+    Attributes:
+        _base_url (str): The base URL of the Koordinates server.
+        _api_version (str): The API version to use.
+        _content_manager (ContentManager or None): Cached ContentManager instance.
+        _wfs_manager (object or None): Cached WFS manager instance (if implemented).
+        _api_key (str): The API key for authenticating requests.
+    """
+
     def __init__(
         self,
         api_key,

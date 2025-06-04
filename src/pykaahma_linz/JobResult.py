@@ -12,6 +12,22 @@ logger = logging.getLogger(__name__)
 
 
 class JobResult:
+    """
+    Represents the result of an asynchronous export or processing job.
+
+    Provides methods to poll for job completion, retrieve job status, and download results.
+    Used to track and manage long-running server-side operations.
+
+    Attributes:
+        _initial_payload (dict): The initial job payload from the API.
+        _job_url (str): The URL to poll for job status.
+        _id (int): The unique identifier of the job.
+        _poll_interval (int): Polling interval in seconds.
+        _timeout (int): Maximum time to wait for job completion in seconds.
+        _last_response (dict): The most recent job status response.
+        _kserver (KServer): The KServer instance associated with this job.
+    """
+
     def __init__(
         self,
         payload: dict,

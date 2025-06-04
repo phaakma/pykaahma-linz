@@ -15,8 +15,13 @@ from pykaahma_linz.KTableItem import KTableItem
 
 class ContentManager:
     """
-    ContentManager is a class that manages the content of a KServer instance.
-    It provides methods to get the service URL and API URL.
+    Manages content for a KServer instance.
+
+    Provides methods to search for, retrieve, and instantiate Koordinates items (layers, tables, etc.)
+    based on their IDs or URLs.
+
+    Attributes:
+        _kserver (KServer): The KServer instance this manager is associated with.
     """
 
     def __init__(self, kserver: "KServer") -> None:

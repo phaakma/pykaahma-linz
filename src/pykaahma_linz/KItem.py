@@ -6,9 +6,21 @@ A base class to represent an item.
 
 class KItem:
     """
-    A base class to represent an item in the Koordinates system.
+    Base class for representing an item in the Koordinates system.
 
     This class provides a structure for items that can be extended by specific item types.
+    It stores basic metadata and provides dynamic attribute access.
+
+    Attributes:
+        _kserver (KServer): The KServer instance this item belongs to.
+        _raw_json (dict): The raw JSON dictionary representing the item.
+        id (str): The unique identifier of the item.
+        url (str): The URL of the item.
+        type (str): The type of the item (e.g., 'layer', 'table').
+        kind (str): The kind of the item (e.g., 'vector', 'table').
+        title (str): The title of the item.
+        description (str): The description of the item.
+        _jobs (list): List of JobResult objects associated with this item.
     """
 
     def __init__(self, kserver: "KServer", item_dict: dict) -> None:

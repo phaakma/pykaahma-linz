@@ -1,5 +1,6 @@
 site_name: pykaahma-linz
 repo_url: https://github.com/phaakma/pykaahma-linz
+site_url: https://phaakma.github.io/pykaahma-linz/
 theme:
   name: material
   features:
