@@ -7,8 +7,41 @@ import os
 import time
 import asyncio
 import httpx
+from dataclasses import dataclass
+import hashlib
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class DownloadResult:
+    """
+    Contains metadata about a completed file download from a Koordinates export job.
+
+    This class is returned by the JobResult.download and JobResult.download_async methods,
+    providing detailed information about the downloaded file and its context.
+
+    Attributes:
+        folder (str): The directory where the file was saved.
+        filename (str): The name of the downloaded file (without path).
+        file_path (str): The full path to the downloaded file.
+        file_size_bytes (int): The size of the downloaded file in bytes.
+        download_url (str): The original download URL provided by the job.
+        final_url (str): The final resolved URL after redirects (e.g., S3 location).
+        job_id (int): The unique identifier of the export job.
+        completed_at (float): The timestamp (seconds since epoch) when the download completed.
+        checksum (str | None): The SHA256 checksum of the downloaded file, or None if unavailable.
+    """
+
+    folder: str
+    filename: str
+    file_path: str
+    file_size_bytes: int
+    download_url: str
+    final_url: str
+    job_id: int
+    completed_at: float
+    checksum: str | None = None
 
 
 class JobResult:
@@ -16,7 +49,9 @@ class JobResult:
     Represents the result of an asynchronous export or processing job.
 
     Provides methods to poll for job completion, retrieve job status, and download results.
-    Used to track and manage long-running server-side operations.
+    The download and download_async methods return a DownloadResult object containing
+    detailed metadata about the downloaded file. Download metadata is also stored as
+    attributes on the JobResult instance after a successful download.
 
     Attributes:
         _initial_payload (dict): The initial job payload from the API.
@@ -26,6 +61,15 @@ class JobResult:
         _timeout (int): Maximum time to wait for job completion in seconds.
         _last_response (dict): The most recent job status response.
         _kserver (KServer): The KServer instance associated with this job.
+
+        # Populated after download:
+        download_folder (str): The directory where the file was saved.
+        download_filename (str): The name of the downloaded file.
+        download_file_path (str): The full path to the downloaded file.
+        download_file_size_bytes (int): The size of the downloaded file in bytes.
+        download_completed_at (float): The timestamp when the download completed.
+        download_resolved_url (str): The final resolved URL after redirects.
+        download_checksum (str | None): The SHA256 checksum of the downloaded file.
     """
 
     def __init__(
@@ -172,7 +216,7 @@ class JobResult:
 
         return self._last_response
 
-    def download(self, folder: str, file_name: str | None = None) -> str:
+    def download(self, folder: str, file_name: str | None = None) -> DownloadResult:
         """
         Waits for job to finish, then downloads the file synchronously.
 
@@ -181,7 +225,7 @@ class JobResult:
             file_name (str, optional): The name of the file to save. If None, uses job name.
 
         Returns:
-            str: The path to the downloaded file.
+            DownloadResult: An object containing details about the downloaded file.
 
         Raises:
             ValueError: If the download URL is not available.
@@ -201,57 +245,41 @@ class JobResult:
         headers = {"Authorization": f"key {self._kserver._api_key}"}
 
         with httpx.Client(follow_redirects=True) as client:
-            # First, resolve the redirect to get the actual file URL
             resp = client.get(self.download_url, headers=headers, follow_redirects=True)
             resp.raise_for_status()
             final_url = str(resp.url)
 
-            # Now stream the file from the final URL (usually S3, no auth header needed)
             with client.stream("GET", final_url) as r, open(file_path, "wb") as f:
                 r.raise_for_status()
                 for chunk in r.iter_bytes():
                     f.write(chunk)
-        return file_path
 
-    async def download_async(self, folder: str, file_name: str | None = None) -> str:
-        """
-        Waits for job to finish, then downloads the file asynchronously.
+        file_size_bytes = os.path.getsize(file_path)
+        checksum = None
+        try:
+            with open(file_path, "rb") as f:
+                checksum = hashlib.sha256(f.read()).hexdigest()
+        except Exception:
+            pass
+        completed_at = time.time()
 
-        Parameters:
-            folder (str): The folder where the file will be saved.
-            file_name (str, optional): The name of the file to save. If None, uses job name.
+        # Set as attributes on the JobResult instance
+        self.download_folder = folder
+        self.download_filename = file_name
+        self.download_file_path = file_path
+        self.download_file_size_bytes = file_size_bytes
+        self.download_completed_at = completed_at
+        self.download_resolved_url = final_url
+        self.download_checksum = checksum
 
-        Returns:
-            str: The path to the downloaded file.
-
-        Raises:
-            ValueError: If the download URL is not available.
-        """
-        await self.output_async()  # ensure job is finished
-        if not self.download_url:
-            raise ValueError(
-                "Download URL not available. Job may not have completed successfully."
-            )
-
-        file_name = f"{file_name}.zip" if file_name else f"{self.name}.zip"
-        file_path = os.path.join(folder, file_name)
-        if not os.path.exists(folder):
-            os.makedirs(folder, exist_ok=True)
-
-        headers = {"Authorization": f"key {self._kserver._api_key}"}
-
-        async with httpx.AsyncClient(follow_redirects=True) as client:
-            # First, resolve the redirect to get the actual file URL
-            resp = await client.get(
-                self.download_url, headers=headers, follow_redirects=True
-            )
-            resp.raise_for_status()
-            final_url = str(resp.url)
-
-            # Now stream the file from the final URL (usually S3, no auth header needed)
-            async with client.stream("GET", final_url) as r:
-                r.raise_for_status()
-                with open(file_path, "wb") as f:
-                    async for chunk in r.aiter_bytes():
-                        await asyncio.to_thread(f.write, chunk)
-        return file_path
+        return DownloadResult(
+            folder=folder,
+            filename=file_name,
+            file_path=file_path,
+            file_size_bytes=file_size_bytes,
+            download_url=self.download_url,
+            final_url=final_url,
+            job_id=self._id,
+            completed_at=completed_at,
+            checksum=checksum,
+        )
