@@ -1,20 +1,18 @@
 [project]
 name = "pykaahma-linz"
-version = "0.1.5"
+version = "0.1.7"
 description = "A Pythonic client for accessing and querying datasets from the LINZ Data Service."
 keywords = [ "kaahma", "koordinates", "LINZ", "geospatial", "open data", "API", "GIS",]
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [ "geopandas>=1.0.1", "pandas>=2.0.2", "requests>=2.30.0", "tenacity>=9.0.0", "httpx>=0.25.0",]
+license = "MIT"
 [[project.authors]]
 name = "Paul Haakma"
 email = "phaakma@gmail.com"
 
 [dependency-groups]
-dev = [ "ipykernel>=6.29.5", "pytest>=8.3.5", "python-dotenv>=1.1.0", "toml>=0.10.2",]
-
-[project.license]
-text = "MIT"
+dev = [ "ipykernel>=6.29.5", "pytest>=8.3.5", "python-dotenv>=1.1.0", "toml>=0.10.2", "mkdocs", "mkdocs-material", "mkdocstrings[python]"]
 
 [tool.uv]
 [[tool.uv.index]]

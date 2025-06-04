@@ -1,0 +1,31 @@
+site_name: pykaahma-linz
+repo_url: https://github.com/phaakma/pykaahma-linz
+theme:
+  name: material
+  features:
+    - navigation.tabs
+    - navigation.instant
+    - content.code.copy
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        python:
+          paths: [src]
+          options:
+            filters:
+            - "!^_[^_]"
+            
+markdown_extensions:
+  - admonition
+  - codehilite
+  - toc:
+      permalink: true
+watch:
+  - src\pykaahma_linz
+
+nav:
+  - Home: index.md
+  - Usage: usage.md
+  - API Reference: reference.md

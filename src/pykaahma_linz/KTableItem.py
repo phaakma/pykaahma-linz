@@ -1,11 +1,12 @@
 """
-KTableItem.py  
+KTableItem.py
 A class to represent a table dataset.
 """
 
 import logging
 import json
 from datetime import datetime
+from typing import Any
 from pykaahma_linz.KItem import KItem
 from pykaahma_linz.JobResult import JobResult
 from .features import wfs as wfs_features
@@ -15,66 +16,71 @@ from pykaahma_linz.CustomErrors import KServerError
 
 logger = logging.getLogger(__name__)
 
+
 class KTableItem(KItem):
     """
     KTableItem is a class that represents a vector dataset.
     It inherits from KItem and provides methods to interact with vector datasets.
     """
 
-    def __init__(self, kserver: "KServer", item_dict: dict):
+    def __init__(self, kserver: "KServer", item_dict: dict) -> None:
         """
-        Initializes the KTableItem with a dict.
+        Initializes the KTableItem with a dictionary of item details.
 
-        Args:
+        Parameters:
+            kserver (KServer): The KServer instance this item belongs to.
             item_dict (dict): A dictionary containing the item's details, typically from an API response.
+
+        Returns:
+            None
         """
-        super().__init__(kserver, item_dict)        
-        self._supports_changesets = None 
-        self._services = None      
+        super().__init__(kserver, item_dict)
+        self._supports_changesets = None
+        self._services = None
         logger.debug(f"Initializing KTableItem with id: {self.id}, title: {self.title}")
-    
+
     @property
-    def fields(self):
+    def fields(self) -> list:
         """
         Returns the fields of the item.
 
         Returns:
             list: A list of fields associated with the item.
         """
-        return self._raw_json.get("data",{}).get("fields", [])
+        return self._raw_json.get("data", {}).get("fields", [])
 
     @property
-    def primary_key_fields(self):
+    def primary_key_fields(self) -> list:
         """
         Returns the primary key fields of the item.
 
         Returns:
             list: A list of primary key fields associated with the item.
         """
-        return self._raw_json.get("data",{}).get("primary_key_fields", [])
+        return self._raw_json.get("data", {}).get("primary_key_fields", [])
 
     @property
-    def feature_count(self):
+    def feature_count(self) -> int | None:
         """
         Returns the number of features in the item.
 
         Returns:
             int: The number of features associated with the item, or None if not available.
         """
-        return self._raw_json.get("data",{}).get("feature_count", None)
+        return self._raw_json.get("data", {}).get("feature_count", None)
 
     @property
-    def export_formats(self):
+    def export_formats(self) -> list:
         """
         Returns the export formats available for the item.
 
         Returns:
             list: A list of export formats associated with the item, or None if not available.
         """
-        return self._raw_json.get("data",{}).get("export_formats", None)
+        return self._raw_json.get("data", {}).get("export_formats", None)
 
     @property
-    def supports_changesets(self):
+    def supports_changesets(self) -> bool:
         """
         Returns whether the item supports changes.
         NB: Not really sure how reliable this is, but seems to be the
@@ -83,7 +89,7 @@ class KTableItem(KItem):
         Returns:
             bool: True if the item supports changes, False otherwise.
         """
-        if self._supports_changesets is None:            
+        if self._supports_changesets is None:
             logger.debug(f"Checking if item with id: {self.id} supports changesets")
             self._supports_changesets = any(
                 service.get("key") == "wfs-changesets" for service in self.services
@@ -92,7 +98,7 @@ class KTableItem(KItem):
         return self._supports_changesets
 
     @property
-    def _wfs_url(self):
+    def _wfs_url(self) -> str:
         """
         Returns the WFS URL for the item.
 
@@ -102,28 +108,24 @@ class KTableItem(KItem):
         """
         return f"{self._kserver._service_url}wfs/"
 
-    def get_wfs_service(self):
+    def get_wfs_service(self) -> str:
         """
-        Returns a WebFeatureService instance for the item.
-
-        Args:
-            version (str): The WFS version to use. Defaults to "2.0.0".
+        Returns a string that is the URL for the WFS service.
 
         Returns:
-            WebFeatureService: An instance of WebFeatureService for the item.
+            str: The URL for the WFS service.
         """
-        
+
         logger.debug(f"Creating WFS service for item with id: {self.id}")
         wfs_service = self._kserver.wfs.operations
 
-    def query_json(self, cql_filter: str = None, **kwargs):
+    def query_json(self, cql_filter: str = None, **kwargs: Any) -> dict:
         """
         Executes a WFS query on the item and returns the result as JSON.
 
-        Args:
-            typeNames (str): The type names to query.
-            cql_filter (str): The CQL filter to apply to the query.
-            srsName (str): The spatial reference system name to use for the query.
+        Parameters:
+            cql_filter (str, optional): The CQL filter to apply to the query.
+            **kwargs: Additional parameters for the WFS query.
 
         Returns:
             dict: The result of the WFS query in JSON format.
@@ -140,36 +142,35 @@ class KTableItem(KItem):
 
         return result
 
-    def query(self, cql_filter: str = None, **kwargs):
+    def query(self, cql_filter: str = None, **kwargs: Any) -> dict:
         """
-        Executes a WFS query on the item.
+        Executes a WFS query on the item and returns the result as a DataFrame.
 
-        Args:
-            cql_filter (str): The WFS query to execute.
+        Parameters:
+            cql_filter (str, optional): The CQL filter to apply to the query.
+            **kwargs: Additional parameters for the WFS query.
 
         Returns:
-            dict: The result of the WFS query.
+            pandas.DataFrame: The result of the WFS query as a DataFrame.
         """
         logger.debug(f"Executing WFS query for item with id: {self.id}")
 
-        result = self.query_json(           
-            cql_filter=cql_filter,
-            **kwargs
-        )
+        result = self.query_json(cql_filter=cql_filter, **kwargs)
 
-        df = json_to_df(result, fields = self.fields)
+        df = json_to_df(result, fields=self.fields)
         return df
 
-    def get_changeset_json(self, from_time: str, to_time: str = None, cql_filter: str = None, **kwargs):
+    def get_changeset_json(
+        self, from_time: str, to_time: str = None, cql_filter: str = None, **kwargs: Any
+    ) -> dict:
         """
         Retrieves a changeset for the item in JSON format.
 
-        Args:
-            from_time (str): The start time for the changeset query, ISO format.
-                            example, 2015-05-15T04:25:25.334974
-            to_time (str, optional): The end time for the changeset query, ISO format.
-                            If not provided, the current time is used.
-            cql_filter (str): The CQL filter to apply to the changeset query.
+        Parameters:
+            from_time (str): The start time for the changeset query, ISO format (e.g., "2015-05-15T04:25:25.334974").
+            to_time (str, optional): The end time for the changeset query, ISO format. If not provided, the current time is used.
+            cql_filter (str, optional): The CQL filter to apply to the changeset query.
+            **kwargs: Additional parameters for the WFS query.
 
         Returns:
             dict: The changeset data in JSON format.
@@ -178,50 +179,50 @@ class KTableItem(KItem):
             logger.error(f"Item with id: {self.id} does not support changesets.")
             raise KServerError("This item does not support changesets.")
 
-        if to_time is None:            
+        if to_time is None:
             to_time = datetime.now().isoformat()
-        logger.debug(f"Fetching changeset for item with id: {self.id} from {from_time} to {to_time}")
+        logger.debug(
+            f"Fetching changeset for item with id: {self.id} from {from_time} to {to_time}"
+        )
 
         viewparams = f"from:{from_time};to:{to_time}"
 
         result = wfs_features.download_wfs_data(
-                url=self._wfs_url,
-                api_key=self._kserver._api_key,
-                typeNames=f"{self.type}-{self.id}-changeset",
-                viewparams=viewparams,
-                cql_filter=cql_filter,
-                **kwargs
-            )
-        
+            url=self._wfs_url,
+            api_key=self._kserver._api_key,
+            typeNames=f"{self.type}-{self.id}-changeset",
+            viewparams=viewparams,
+            cql_filter=cql_filter,
+            **kwargs,
+        )
+
         return result
 
-    def get_changeset(self, from_time: str, to_time: str = None, cql_filter: str = None, **kwargs):
+    def get_changeset(
+        self, from_time: str, to_time: str = None, cql_filter: str = None, **kwargs: Any
+    ) -> dict:
         """
-        Retrieves a changeset for the item.
+        Retrieves a changeset for the item and returns it as a DataFrame.
 
-        Args:
-            from_time (str): The start time for the changeset query, ISO format.
-                            example, 2015-05-15T04:25:25.334974
-            to_time (str, optional): The end time for the changeset query, ISO format.
-                            If not provided, the current time is used.
-            cql_filter (str): The CQL filter to apply to the changeset query.
+        Parameters:
+            from_time (str): The start time for the changeset query, ISO format (e.g., "2015-05-15T04:25:25.334974").
+            to_time (str, optional): The end time for the changeset query, ISO format. If not provided, the current time is used.
+            cql_filter (str, optional): The CQL filter to apply to the changeset query.
+            **kwargs: Additional parameters for the WFS query.
 
         Returns:
-            dict: The changeset data.
+            pandas.DataFrame: The changeset data as a DataFrame.
         """
 
         result = self.get_changeset_json(
-                from_time=from_time,
-                to_time=to_time,
-                cql_filter=cql_filter,
-                **kwargs
-            )
-        
-        df = json_to_df(result, fields = self.fields)
+            from_time=from_time, to_time=to_time, cql_filter=cql_filter, **kwargs
+        )
+
+        df = json_to_df(result, fields=self.fields)
         return df
 
     @property
-    def services(self):
+    def services(self) -> list:
         """
         Returns the services associated with the item.
 
@@ -233,10 +234,12 @@ class KTableItem(KItem):
             logger.debug(f"Fetching services for item with id: {self.id}")
             url = self._kserver._api_url + f"tables/{self.id}/services/"
             self._services = self._kserver.get(url)
-        logger.debug(f"Returning {len(self._services)} services for item with id: {self.id}")
+        logger.debug(
+            f"Returning {len(self._services)} services for item with id: {self.id}"
+        )
         return self._services
 
-    def reset(self):
+    def reset(self) -> None:
         """
         Resets the KTableItem instance, clearing cached properties.
         This is useful for refreshing the item state.
@@ -246,15 +249,18 @@ class KTableItem(KItem):
         self._services = None
         self._raw_json = None
 
-    def _resolve_export_format(self, export_format: str):
+    def _resolve_export_format(self, export_format: str) -> str:
         """
-        Validates if the export format is supported by the item.
+        Validates if the export format is supported by the item and returns the mimetype.
 
-        Args:
+        Parameters:
             export_format (str): The format to validate.
 
         Returns:
-            bool: True if the format is supported, False otherwise.
+            str: The mimetype of the export format if supported.
+
+        Raises:
+            ValueError: If the export format is not supported by this item.
         """
         logger.debug(
             f"Validating export format: {export_format} for item with id: {self.id}"
@@ -284,8 +290,18 @@ class KTableItem(KItem):
     def validate_export_request(
         self,
         export_format: str,
-        **kwargs,
-    ):
+        **kwargs: Any,
+    ) -> bool:
+        """
+        Validates the export request parameters for the item.
+
+        Parameters:
+            export_format (str): The format to export the item in.
+            **kwargs: Additional parameters for the export request.
+
+        Returns:
+            bool: True if the export request is valid, False otherwise.
+        """
 
         export_format = self._resolve_export_format(export_format)
 
@@ -309,20 +325,21 @@ class KTableItem(KItem):
         export_format: str,
         poll_interval: int = 10,
         timeout: int = 600,
-        **kwargs,
-    ):
+        **kwargs: Any,
+    ) -> JobResult:
         """
         Exports the item in the specified format.
 
-        Args:
+        Parameters:
             export_format (str): The format to export the item in.
-            crs (str, optional): The coordinate reference system to use for the export.
-            extent (dict, optional): The extent to use for the export. Should be a GeoJSON dictionary.
+            poll_interval (int, optional): The interval in seconds to poll the export job status. Default is 10 seconds.
+            timeout (int, optional): The maximum time in seconds to wait for the export job to complete. Default is 600 seconds (10 minutes).
             **kwargs: Additional parameters for the export request.
 
         Returns:
             JobResult: A JobResult instance containing the export job details.
         """
+
         logger.debug(f"Exporting item with id: {self.id} in format: {export_format}")
 
         export_format = self._resolve_export_format(export_format)
@@ -359,5 +376,5 @@ class KTableItem(KItem):
         )
         return job_result
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"KTableItem(id={self.id}, title={self.title}, type={self.type}, kind={self.kind})"

@@ -15,18 +15,21 @@ def geojson_to_gdf(
     """
     Convert GeoJSON features to a GeoDataFrame with enforced data types.
 
-    Args:
-        geojson: Either a GeoJSON FeatureCollection (dict) or a list of GeoJSON features (dicts).
-        epsg: Coordinate Reference System (e.g., "4326").
-        fields: A list of dictionaries specifying field names and their desired data types.
+    Parameters:
+        geojson (dict or list): Either a GeoJSON FeatureCollection (dict) or a list of GeoJSON features (dicts).
+        epsg (str or int): Coordinate Reference System (e.g., "4326").
+        fields (list, optional): A list of dictionaries specifying field names and their desired data types.
 
     Returns:
-        A GeoDataFrame with the specified CRS and column types.
+        gpd.GeoDataFrame: A GeoDataFrame with the specified CRS and column types.
+
+    Raises:
+        ValueError: If the geojson input is invalid.
     """
 
     logger.debug("Converting GeoJSON to GeoDataFrame...")
 
-    #if the geosjon is None, return an empty GeoDataFrame
+    # if the geosjon is None, return an empty GeoDataFrame
     if geojson is None:
         logger.warning("Received None as geojson input, returning empty GeoDataFrame.")
         return gpd.GeoDataFrame(columns=[], geometry=[])
@@ -84,7 +87,6 @@ def geojson_to_gdf(
                     raise ValueError(
                         f"Failed to convert column '{col}' to {dtype}: {e}"
                     )
-
     return gdf
 
 
@@ -92,16 +94,18 @@ def json_to_df(
     json: dict[str, Any] | list[dict[str, Any]],
     fields: list[dict[str, str]] | None = None,
 ) -> pd.DataFrame:
-
     """
-    Convert GeoJSON features to a GeoDataFrame with enforced data types.
+    Convert JSON features to a DataFrame with enforced data types.
 
-    Args:
-        geojson: Either a JSON FeatureCollection (dict) or a list of JSON features (dicts).
-        fields: A list of dictionaries specifying field names and their desired data types.
+    Parameters:
+        json (dict or list): Either a JSON FeatureCollection (dict) or a list of JSON features (dicts).
+        fields (list, optional): A list of dictionaries specifying field names and their desired data types.
 
     Returns:
-        A DataFrame with the specified column types.
+        pd.DataFrame: A DataFrame with the specified column types.
+
+    Raises:
+        ValueError: If the json input is invalid.
     """
 
     logger.debug("Converting JSON to DataFrame...")
@@ -152,15 +156,18 @@ def json_to_df(
                     )
 
     return df
-    
+
 
 def gdf_to_single_polygon_geojson(gdf: gpd.GeoDataFrame) -> dict[str, Any] | None:
     """
     Convert a GeoDataFrame to a single GeoJSON polygon geometry object.
-    Args:
-        gdf: A GeoDataFrame containing polygon geometries.
+
+    Parameters:
+        gdf (gpd.GeoDataFrame): A GeoDataFrame containing polygon geometries.
+
     Returns:
-        A GeoJSON polygon geometry object or None if the GeoDataFrame is empty.
+        dict or None: A GeoJSON polygon geometry object or None if the GeoDataFrame is empty.
+
     Raises:
         ValueError: If the GeoDataFrame is empty or contains non-polygon geometries.
     """
@@ -170,7 +177,7 @@ def gdf_to_single_polygon_geojson(gdf: gpd.GeoDataFrame) -> dict[str, Any] | Non
     if not all(gdf.geometry.type == "Polygon"):
         raise ValueError("GeoDataFrame must contain only Polygon geometries.")
 
-    #convert crs to EPSG:4326 if not already
+    # convert crs to EPSG:4326 if not already
     if gdf.crs is None:
         gdf.set_crs(epsg=4326, inplace=True)
     elif gdf.crs.to_epsg() != 4326:
@@ -190,11 +197,14 @@ def gdf_to_single_polygon_geojson(gdf: gpd.GeoDataFrame) -> dict[str, Any] | Non
 
 def gdf_to_bbox(gdf: gpd.GeoDataFrame) -> str:
     """
-    Convert a GeoDataFrame to a bounding box string in the format "XMin,YMin,XMax,YMax,EPSG:4326".
-    Args:
-        gdf: A GeoDataFrame containing geometries.
+    Convert a GeoDataFrame to a bounding box string.
+
+    Parameters:
+        gdf (gpd.GeoDataFrame): A GeoDataFrame containing geometries.
+
     Returns:
-        A bounding box string in the format "XMin,YMin,XMax,YMax,EPSG:4326".
+        str: A bounding box string in the format "XMin,YMin,XMax,YMax,EPSG:4326".
+
     Raises:
         ValueError: If the GeoDataFrame is empty or does not contain valid geometries.
     """
@@ -202,7 +212,9 @@ def gdf_to_bbox(gdf: gpd.GeoDataFrame) -> str:
         raise ValueError("GeoDataFrame must contain at least one geometry.")
 
     if not all(gdf.geometry.type.isin(["Polygon", "MultiPolygon"])):
-        raise ValueError("GeoDataFrame must contain only Polygon or MultiPolygon geometries.")
+        raise ValueError(
+            "GeoDataFrame must contain only Polygon or MultiPolygon geometries."
+        )
 
     # Ensure the GeoDataFrame is in EPSG:4326
     if gdf.crs is None:

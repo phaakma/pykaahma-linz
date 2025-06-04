@@ -1,7 +1,13 @@
-# Examples  
-Note: this is a work in progress and subject to change. Mostly just copy/pasting from developing notebook cells, so this may need tidying up and re-writing into proper documentation.  
+# Usage Guide
 
-Most of the examples assume they are building upon the first example of getting a reference to an item.  
+This guide walks you through the main ways to use the `pykaahma-linz` package to query and download data from the LINZ Data Service via Koordinates.
+
+## Connecting to the LINZ Data Service
+
+```python
+from pykaahma_linz.KServer import KServer
+linz = KServer(api_key="your-api-key")
+```
 
 ## Get a reference to an item  
 
@@ -153,3 +159,17 @@ def export_multiple_items_sync():
 # Call main_sync() in a normal script or notebook cell
 export_multiple_items_sync()
 ```
+
+## Tests  
+
+To run all tests:  
+
+To run all tests with logging. Leave off the log parameter if not wanting logging.  
+```bash
+uv run -m pytest --log-cli-level=INFO
+```  
+
+To run a specific test, replace the relevant file name and test function.  
+```bash
+uv run -m pytest tests/test_simple.py::test_validate_layer_export_params --log-cli-level=INFO
+```  

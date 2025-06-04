@@ -7,14 +7,20 @@ import logging
 import json
 from datetime import datetime
 import geopandas as gpd
+from typing import Any
 from pykaahma_linz.KItem import KItem
 from pykaahma_linz.JobResult import JobResult
 from .features import wfs as wfs_features
 from .features import export as export_features
-from .features.Conversion import geojson_to_gdf, gdf_to_single_polygon_geojson, gdf_to_bbox
+from .features.Conversion import (
+    geojson_to_gdf,
+    gdf_to_single_polygon_geojson,
+    gdf_to_bbox,
+)
 from pykaahma_linz.CustomErrors import KServerError
 
 logger = logging.getLogger(__name__)
+
 
 class KVectorItem(KItem):
     """
@@ -22,14 +28,18 @@ class KVectorItem(KItem):
     It inherits from KItem and provides methods to interact with vector datasets.
     """
 
-    def __init__(self, kserver: "KServer", item_dict: dict):
+    def __init__(self, kserver: "KServer", item_dict: dict) -> None:
         """
-        Initializes the KVectorItem with a dict.
+        Initializes the KVectorItem with a dictionary of item details.
 
-        Args:
+        Parameters:
+            kserver (KServer): The KServer instance this item belongs to.
             item_dict (dict): A dictionary containing the item's details, typically from an API response.
+
+        Returns:
+            None
         """
-        super().__init__(kserver, item_dict)        
+        super().__init__(kserver, item_dict)
         self._supports_changesets = None
         self._services = None
         logger.debug(
@@ -37,7 +47,7 @@ class KVectorItem(KItem):
         )
 
     @property
-    def fields(self):
+    def fields(self) -> list:
         """
         Returns the fields of the item.
 
@@ -47,7 +57,7 @@ class KVectorItem(KItem):
         return self._raw_json.get("data", {}).get("fields", [])
 
     @property
-    def epsg(self):
+    def epsg(self) -> int | None:
         """
         Returns the EPSG code of the item.
 
@@ -57,7 +67,7 @@ class KVectorItem(KItem):
         return self._raw_json.get("data", {}).get("crs", {}).get("srid", None)
 
     @property
-    def primary_key_fields(self):
+    def primary_key_fields(self) -> list:
         """
         Returns the primary key fields of the item.
 
@@ -67,7 +77,7 @@ class KVectorItem(KItem):
         return self._raw_json.get("data", {}).get("primary_key_fields", [])
 
     @property
-    def geometry_type(self):
+    def geometry_type(self) -> str | None:
         """
         Returns the geometry type of the item.
 
@@ -77,7 +87,7 @@ class KVectorItem(KItem):
         return self._raw_json.get("data", {}).get("geometry_type", None)
 
     @property
-    def feature_count(self):
+    def feature_count(self) -> int | None:
         """
         Returns the number of features in the item.
 
@@ -87,7 +97,7 @@ class KVectorItem(KItem):
         return self._raw_json.get("data", {}).get("feature_count", None)
 
     @property
-    def extent(self):
+    def extent(self) -> dict | None:
         """
         Returns the extent of the item.
 
@@ -97,7 +107,7 @@ class KVectorItem(KItem):
         return self._raw_json.get("data", {}).get("extent", None)
 
     @property
-    def export_formats(self):
+    def export_formats(self) -> list | None:
         """
         Returns the export formats available for the item.
 
@@ -107,7 +117,7 @@ class KVectorItem(KItem):
         return self._raw_json.get("data", {}).get("export_formats", None)
 
     @property
-    def supports_changesets(self):
+    def supports_changesets(self) -> bool:
         """
         Returns whether the item supports changes.
         NB: Not really sure how reliable this is, but seems to be the
@@ -125,7 +135,7 @@ class KVectorItem(KItem):
         return self._supports_changesets
 
     @property
-    def _wfs_url(self):
+    def _wfs_url(self) -> str:
         """
         Returns the WFS URL for the item.
 
@@ -135,28 +145,33 @@ class KVectorItem(KItem):
         """
         return f"{self._kserver._service_url}wfs/"
 
-    def get_wfs_service(self):
+    def get_wfs_service(self) -> str:
         """
-        Returns a WebFeatureService instance for the item.
-
-        Args:
-            version (str): The WFS version to use. Defaults to "2.0.0".
+        Returns the item's WFS service URL.
 
         Returns:
-            WebFeatureService: An instance of WebFeatureService for the item.
+            str: The WFS service URL.
         """
 
         logger.debug(f"Creating WFS service for item with id: {self.id}")
         wfs_service = self._kserver.wfs.operations
 
-    def query_json(self, cql_filter: str = None, srsName: str = None, bbox: str | gpd.GeoDataFrame = None, **kwargs):
+    def query_json(
+        self,
+        cql_filter: str = None,
+        srsName: str = None,
+        bbox: str | gpd.GeoDataFrame = None,
+        **kwargs: Any,
+    ) -> dict:
         """
         Executes a WFS query on the item and returns the result as JSON.
 
-        Args:
-            typeNames (str): The type names to query.
-            cql_filter (str): The CQL filter to apply to the query.
-            srsName (str): The spatial reference system name to use for the query.
+        Parameters:
+            cql_filter (str, optional): The CQL filter to apply to the query.
+            srsName (str, optional): The spatial reference system name to use for the query.
+            bbox (str or gpd.GeoDataFrame, optional): The bounding box to apply to the query.
+                If a GeoDataFrame is provided, it will be converted to a bounding box string in WGS84.
+            **kwargs: Additional parameters for the WFS query.
 
         Returns:
             dict: The result of the WFS query in JSON format.
@@ -181,7 +196,13 @@ class KVectorItem(KItem):
 
         return result
 
-    def query(self, cql_filter: str = None, srsName: str = None, bbox: str | gdf.GeoDataFrame = None, **kwargs):
+    def query(
+        self,
+        cql_filter: str = None,
+        srsName: str = None,
+        bbox: str | gpd.GeoDataFrame = None,
+        **kwargs: Any,
+    ) -> gpd.GeoDataFrame:
         """
         Executes a WFS query on the item.
 
@@ -204,22 +225,28 @@ class KVectorItem(KItem):
         return gdf
 
     def get_changeset_json(
-        self, from_time: str, to_time: str = None, cql_filter: str = None, bbox: str | gpd.GeoDataFrame = None, **kwargs):
+        self,
+        from_time: str,
+        to_time: str = None,
+        cql_filter: str = None,
+        bbox: str | gpd.GeoDataFrame = None,
+        **kwargs: Any,
+    ) -> dict:
         """
         Retrieves a changeset for the item in JSON format.
-        Args:
-            from_time (str): The start time for the changeset query, ISO format.
-                            example, 2015-05-15T04:25:25.334974
-            to_time (str, optional): The end time for the changeset query, ISO format.
-                            If not provided, the current time is used.
-            cql_filter (str): The CQL filter to apply to the changeset query.
-            bbox (str | gpd.GeoDataFrame, optional): The bounding box to apply to the changeset query.
-                bbox string must be in WGS84 and should be in the format "XMin,YMin,XMax,YMax,EPSG:4326"
+
+        Parameters:
+            from_time (str): The start time for the changeset query, ISO format (e.g., "2015-05-15T04:25:25.334974").
+            to_time (str, optional): The end time for the changeset query, ISO format. If not provided, the current time is used.
+            cql_filter (str, optional): The CQL filter to apply to the changeset query.
+            bbox (str or gpd.GeoDataFrame, optional): The bounding box to apply to the changeset query.
                 If a GeoDataFrame is provided, it will be converted to a bounding box string in WGS84.
-            kwargs: Additional parameters for the WFS query.
+            **kwargs: Additional parameters for the WFS query.
+
         Returns:
             dict: The changeset data in JSON format.
         """
+
         if not self.supports_changesets:
             logger.error(f"Item with id: {self.id} does not support changesets.")
             raise KServerError("This item does not support changesets.")
@@ -251,20 +278,26 @@ class KVectorItem(KItem):
         return result
 
     def get_changeset(
-        self, from_time: str, to_time: str = None, cql_filter: str = None, bbox: str | gpd.GeoDataFrame = None, **kwargs
-    ):
+        self,
+        from_time: str,
+        to_time: str = None,
+        cql_filter: str = None,
+        bbox: str | gpd.GeoDataFrame = None,
+        **kwargs: Any,
+    ) -> gpd.GeoDataFrame:
         """
-        Retrieves a changeset for the item.
+        Retrieves a changeset for the item and returns it as a GeoDataFrame.
 
-        Args:
-            from_time (str): The start time for the changeset query, ISO format.
-                            example, 2015-05-15T04:25:25.334974
-            to_time (str, optional): The end time for the changeset query, ISO format.
-                            If not provided, the current time is used.
-            cql_filter (str): The CQL filter to apply to the changeset query.
+        Parameters:
+            from_time (str): The start time for the changeset query, ISO format (e.g., "2015-05-15T04:25:25.334974").
+            to_time (str, optional): The end time for the changeset query, ISO format. If not provided, the current time is used.
+            cql_filter (str, optional): The CQL filter to apply to the changeset query.
+            bbox (str or gpd.GeoDataFrame, optional): The bounding box to apply to the changeset query.
+                If a GeoDataFrame is provided, it will be converted to a bounding box string in WGS84.
+            **kwargs: Additional parameters for the WFS query.
 
         Returns:
-            dict: The changeset data.
+            gpd.GeoDataFrame: The changeset data as a GeoDataFrame.
         """
 
         result = self.get_changeset_json(
@@ -279,7 +312,7 @@ class KVectorItem(KItem):
         return gdf
 
     @property
-    def services(self):
+    def services(self) -> list:
         """
         Returns the services associated with the item.
 
@@ -296,7 +329,7 @@ class KVectorItem(KItem):
         )
         return self._services
 
-    def reset(self):
+    def reset(self) -> None:
         """
         Resets the KVectorItem instance, clearing cached properties.
         This is useful for refreshing the item state.
@@ -306,15 +339,18 @@ class KVectorItem(KItem):
         self._services = None
         self._raw_json = None
 
-    def _resolve_export_format(self, export_format: str):
+    def _resolve_export_format(self, export_format: str) -> str:
         """
-        Validates if the export format is supported by the item.
+        Validates if the export format is supported by the item and returns the mimetype.
 
-        Args:
+        Parameters:
             export_format (str): The format to validate.
 
         Returns:
-            bool: True if the format is supported, False otherwise.
+            str: The mimetype of the export format if supported.
+
+        Raises:
+            ValueError: If the export format is not supported by this item.
         """
         logger.debug(
             f"Validating export format: {export_format} for item with id: {self.id}"
@@ -346,8 +382,20 @@ class KVectorItem(KItem):
         export_format: str,
         crs: str = None,
         extent: dict = None,
-        **kwargs,
-    ):
+        **kwargs: Any,
+    ) -> bool:
+        """
+        Validates the export request parameters for the item.
+
+        Parameters:
+            export_format (str): The format to export the item in.
+            crs (str, optional): The coordinate reference system to use for the export.
+            extent (dict, optional): The extent to use for the export. Should be a GeoJSON dictionary.
+            **kwargs: Additional parameters for the export request.
+
+        Returns:
+            bool: True if the export request is valid, False otherwise.
+        """
 
         export_format = self._resolve_export_format(export_format)
 
@@ -375,15 +423,17 @@ class KVectorItem(KItem):
         extent: dict | gpd.GeoDataFrame = None,
         poll_interval: int = 10,
         timeout: int = 600,
-        **kwargs,
-    ):
+        **kwargs: Any,
+    ) -> JobResult:
         """
         Exports the item in the specified format.
 
-        Args:
+        Parameters:
             export_format (str): The format to export the item in.
             crs (str, optional): The coordinate reference system to use for the export.
-            extent (dict, optional): The extent to use for the export. Should be a GeoJSON dictionary.
+            extent (dict or gpd.GeoDataFrame, optional): The extent to use for the export. Should be a GeoJSON dictionary or a GeoDataFrame.
+            poll_interval (int, optional): The interval in seconds to poll the export job status. Default is 10 seconds.
+            timeout (int, optional): The maximum time in seconds to wait for the export job to complete. Default is 600 seconds (10 minutes).
             **kwargs: Additional parameters for the export request.
 
         Returns:
@@ -435,5 +485,5 @@ class KVectorItem(KItem):
         )
         return job_result
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"KVectorItem(id={self.id}, title={self.title}, type={self.type}, kind={self.kind})"

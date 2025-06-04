@@ -2,6 +2,7 @@
 import requests
 import os
 from datetime import datetime
+from typing import Any
 from tenacity import (
     retry,
     stop_after_attempt,
@@ -24,12 +25,13 @@ def _ensure_ending_slash(url: str) -> str:
     """
     Ensures the URL ends with a slash.
 
-    Args:
+    Parameters:
         url (str): The URL to check.
 
     Returns:
         str: The URL with a trailing slash.
     """
+
     return url if url.endswith("/") else f"{url}/"
 
 
@@ -37,13 +39,35 @@ def validate_export_params(
     api_url: str,
     api_key: str,
     id: str,
-    data_type: str,  # 'layer' or 'table' so far...
+    data_type: str,
     kind: str,
     export_format: str,
     crs: str = None,
     extent: dict = None,
-    **kwargs,
-):
+    **kwargs: Any,
+) -> bool:
+    """
+    Validates export parameters for a given item.
+
+    Parameters:
+        api_url (str): The base URL of the Koordinates API.
+        api_key (str): The API key for authentication.
+        id (str): The ID of the item to export.
+        data_type (str): The type of data ('layer' or 'table').
+        kind (str): The kind of export (e.g., 'shp', 'geojson').
+        export_format (str): The format for the export.
+        crs (str, optional): Coordinate Reference System, if applicable.
+        extent (dict, optional): Spatial extent for the export.
+        **kwargs: Additional parameters for the export.
+
+    Returns:
+        bool: True if the export parameters are valid, False otherwise.
+
+    Raises:
+        ValueError: If the data type is unsupported or not implemented.
+    """
+
+
     # validation_url = f"{requests_url}validate/"
     logger.info("Validating export parameters")
     logger.info(data_type)
@@ -115,13 +139,34 @@ def request_export(
     api_url: str,
     api_key: str,
     id: str,
-    data_type: str,  # 'layer' or 'table' so far...
+    data_type: str,
     kind: str,
     export_format: str,
     crs: str = None,
     extent: dict = None,
-    **kwargs,
-):
+    **kwargs: Any,
+) -> dict:
+    """
+    Requests an export of a given item from the Koordinates API.
+
+    Parameters:
+        api_url (str): The base URL of the Koordinates API.
+        api_key (str): The API key for authentication.
+        id (str): The ID of the item to export.
+        data_type (str): The type of data ('layer' or 'table').
+        kind (str): The kind of export (e.g., 'shp', 'geojson').
+        export_format (str): The format for the export.
+        crs (str, optional): Coordinate Reference System, if applicable.
+        extent (dict, optional): Spatial extent for the export.
+        **kwargs: Additional parameters for the export.
+
+    Returns:
+        dict: The response from the export request, typically containing job details.
+
+    Raises:
+        KExportError: If the export request fails or if the response cannot be parsed.
+        ValueError: If the data type is unsupported or not implemented.
+    """
 
     logger.info("Requesting export")
 
@@ -165,5 +210,4 @@ def request_export(
         logger.debug(err)
         logger.debug(e)
         raise KExportError(err)
-
     return json_response

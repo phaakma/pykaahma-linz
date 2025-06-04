@@ -3,7 +3,17 @@
 These are just general notes for the author to help remember design choices, rabbit holes and how they panned out, etc.  
 
 ## Installation  
-When I run ```uv sync``` and ```uv pip install ie.``` on a new cloned copy, if I have a python environment activated already in my terminal it seems to do odd things sometimes. VS Code sometimes activates automatically depending on settings. And sometimes those settings vary between PowerShell and the standard Command Prompt. So I find it best to ensure I open a separate Command Prompt window with nothing activated, run those initial commands there, and then open up VS Code and any terminal windows.  
+When I run ```uv sync``` and ```uv pip install -e .``` on a new cloned copy, if I have a python environment activated already in my terminal it seems to do odd things sometimes. VS Code sometimes activates automatically depending on settings. And sometimes those settings vary between PowerShell and the standard Command Prompt. So I find it best to ensure I open a separate Command Prompt window with nothing activated, run those initial commands there, and then open up VS Code and any terminal windows. 
+
+If installing from the whl file using UV, remember to add the package name.
+```bash
+uv pip install pykaahma-linz@path/to/packagefile.whl
+```
+
+If using the code directly rather than installing from PyPi (once it is uploaded to there), run the following to install the package locally in editable mode.
+```bash
+pip install -e .
+```
 
 ## Development using Jupyter Notebooks  
 I got the following tips from Cookie Cutter Data Science.  

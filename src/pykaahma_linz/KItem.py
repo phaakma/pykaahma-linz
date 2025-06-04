@@ -3,19 +3,24 @@ KItem.py
 A base class to represent an item.
 """
 
+
 class KItem:
     """
     A base class to represent an item in the Koordinates system.
-    
+
     This class provides a structure for items that can be extended by specific item types.
     """
 
-    def __init__(self, kserver: "KServer", item_dict: dict):
+    def __init__(self, kserver: "KServer", item_dict: dict) -> None:
         """
-        Initializes the KItem instance from a dict returned from the api.
+        Initializes the KItem instance from a dictionary returned from the API.
 
-        Args:
+        Parameters:
+            kserver (KServer): The KServer instance that this item belongs to.
             item_dict (dict): A dictionary containing the item's details, typically from an API response.
+
+        Returns:
+            None
         """
         self._kserver = kserver
         self._raw_json = item_dict
@@ -27,11 +32,11 @@ class KItem:
         self.description = item_dict.get("description")
         self._jobs = []
 
-    def __getattr__(self, item):
+    def __getattr__(self, item) -> object:
         """
         Provides dynamic attribute access for the item.
 
-        Args:
+        Parameters:
             item (str): The name of the attribute to access.
 
         Returns:
@@ -42,7 +47,5 @@ class KItem:
             raise AttributeError(f"{self.__class__.__name__} has no attribute '{item}'")
         return attr
 
-
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"KItem(id={self.id}, title={self.title}, type={self.type})"
-

@@ -10,8 +10,27 @@ import httpx
 
 logger = logging.getLogger(__name__)
 
+
 class JobResult:
-    def __init__(self, payload: dict, kserver: "KServer", poll_interval: int = 10, timeout: int = 300):
+    def __init__(
+        self,
+        payload: dict,
+        kserver: "KServer",
+        poll_interval: int = 10,
+        timeout: int = 300,
+    ) -> None:
+        """
+        Initializes the JobResult instance.
+
+        Parameters:
+            payload (dict): The job payload, typically from an API response.
+            kserver (KServer): The KServer instance associated with this job.
+            poll_interval (int, optional): The interval in seconds to poll the job status. Default is 10 seconds.
+            timeout (int, optional): The maximum time in seconds to wait for the job to complete. Default is 300 seconds.
+
+        Returns:
+            None
+        """
         self._initial_payload = payload
         self._job_url = payload["url"]
         self._id = payload["id"]
@@ -59,20 +78,29 @@ class JobResult:
             f"progress={self.progress})"
         )
 
-    def _refresh_sync(self):
+    def _refresh_sync(self) -> None:
         """Refresh job status using synchronous HTTP via KServer."""
         self._last_response = self._kserver.get(self._job_url)
 
-    async def _refresh_async(self):
+    async def _refresh_async(self) -> None:
         """Refresh job status using asynchronous HTTP via KServer."""
         self._last_response = await self._kserver.async_get(self._job_url)
 
     def output(self) -> dict:
-        """Blocking: wait for the job to complete synchronously."""
+        """
+        Blocking: Waits for the job to complete synchronously.
+
+        Returns:
+            dict: The final job response after completion.
+
+        Raises:
+            TimeoutError: If the job does not complete within the timeout.
+            RuntimeError: If the job fails or is cancelled.
+        """
         start = time.time()
-        # timeout the while loop if it takes more than twenty minutes 
+        # timeout the while loop if it takes more than twenty minutes
         # to complete
-        max_time = 1200 # 20 minutes in seconds
+        max_time = 1200  # 20 minutes in seconds
 
         while True and time.time() - start < max_time:
             self._refresh_sync()
@@ -81,19 +109,32 @@ class JobResult:
                 break
 
             if (time.time() - start) > self._timeout:
-                raise TimeoutError(f"Export job {self._id} did not complete within timeout.")
+                raise TimeoutError(
+                    f"Export job {self._id} did not complete within timeout."
+                )
 
             time.sleep(self._poll_interval)
 
         if self._last_response.get("state") != "complete":
-            raise RuntimeError(f"Export job {self._id} failed with state: {self._last_response.get('state')}")
+            raise RuntimeError(
+                f"Export job {self._id} failed with state: {self._last_response.get('state')}"
+            )
 
         return self._last_response
 
     async def output_async(self) -> dict:
-        """Non-blocking: wait for the job to complete asynchronously."""
+        """
+        Non-blocking: Waits for the job to complete asynchronously.
+
+        Returns:
+            dict: The final job response after completion.
+
+        Raises:
+            TimeoutError: If the job does not complete within the timeout.
+            RuntimeError: If the job fails or is cancelled.
+        """
         start = asyncio.get_event_loop().time()
-        max_time = 600 # 10 minutes in seconds
+        max_time = 600  # 10 minutes in seconds
         while True and (asyncio.get_event_loop().time() - start < max_time):
             await self._refresh_async()
             state = self._last_response.get("state")
@@ -102,28 +143,41 @@ class JobResult:
                 break
 
             if (asyncio.get_event_loop().time() - start) > self._timeout:
-                raise TimeoutError(f"Export job {self._id} did not complete within timeout.")
+                raise TimeoutError(
+                    f"Export job {self._id} did not complete within timeout."
+                )
 
             await asyncio.sleep(self._poll_interval)
 
         if self._last_response.get("state") != "complete":
-            raise RuntimeError(f"Export job {self._id} failed with state: {self._last_response.get('state')}")
+            raise RuntimeError(
+                f"Export job {self._id} failed with state: {self._last_response.get('state')}"
+            )
 
         return self._last_response
 
     def download(self, folder: str, file_name: str | None = None) -> str:
-        """ 
-        Waits for job to finish, then downloads the file synchronously.
-        Args:
-            folder (str): The folder where the file will be saved.
-            file_name (str | None): The name of the file to save. If None, uses job name.
         """
-        
+        Waits for job to finish, then downloads the file synchronously.
+
+        Parameters:
+            folder (str): The folder where the file will be saved.
+            file_name (str, optional): The name of the file to save. If None, uses job name.
+
+        Returns:
+            str: The path to the downloaded file.
+
+        Raises:
+            ValueError: If the download URL is not available.
+        """
+
         self.output()  # ensure job is complete
         if not self.download_url:
-            raise ValueError("Download URL not available. Job may not have completed successfully.")
+            raise ValueError(
+                "Download URL not available. Job may not have completed successfully."
+            )
 
-        file_name = f'{file_name}.zip' if file_name else f'{self.name}.zip'
+        file_name = f"{file_name}.zip" if file_name else f"{self.name}.zip"
         file_path = os.path.join(folder, file_name)
         if not os.path.exists(folder):
             os.makedirs(folder, exist_ok=True)
@@ -143,17 +197,27 @@ class JobResult:
                     f.write(chunk)
         return file_path
 
-    async def download_async(self, folder: str, file_name: str | None = None):
+    async def download_async(self, folder: str, file_name: str | None = None) -> str:
         """
         Waits for job to finish, then downloads the file asynchronously.
-        Args:
+
+        Parameters:
             folder (str): The folder where the file will be saved.
+            file_name (str, optional): The name of the file to save. If None, uses job name.
+
+        Returns:
+            str: The path to the downloaded file.
+
+        Raises:
+            ValueError: If the download URL is not available.
         """
         await self.output_async()  # ensure job is finished
         if not self.download_url:
-            raise ValueError("Download URL not available. Job may not have completed successfully.")
+            raise ValueError(
+                "Download URL not available. Job may not have completed successfully."
+            )
 
-        file_name = f'{file_name}.zip' if file_name else f'{self.name}.zip'
+        file_name = f"{file_name}.zip" if file_name else f"{self.name}.zip"
         file_path = os.path.join(folder, file_name)
         if not os.path.exists(folder):
             os.makedirs(folder, exist_ok=True)
@@ -162,7 +226,9 @@ class JobResult:
 
         async with httpx.AsyncClient(follow_redirects=True) as client:
             # First, resolve the redirect to get the actual file URL
-            resp = await client.get(self.download_url, headers=headers, follow_redirects=True)
+            resp = await client.get(
+                self.download_url, headers=headers, follow_redirects=True
+            )
             resp.raise_for_status()
             final_url = str(resp.url)
 

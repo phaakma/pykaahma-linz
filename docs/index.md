@@ -16,6 +16,8 @@ The author is happy to take feedback and consider suggestions and code contribut
 
 ## Installation  
 
+Documentation is non-existent at the moment, but here is the basic approach so far. 
+ 
 ```bash
 pip install pykaahma-linz
 ```

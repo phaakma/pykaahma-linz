@@ -1,6 +1,7 @@
 # wfs.py
 import requests
 import os
+from typing import Any
 from tenacity import (
     retry,
     stop_after_attempt,
@@ -48,10 +49,11 @@ def _fetch_single_page_data(url: str, headers: dict, params: dict, timeout=30) -
     """
     Fetches a single page of WFS data with retry logic for transient issues.
 
-    Args:
+    Parameters:
         url (str): The WFS service endpoint URL.
         headers (dict): HTTP headers for the request (including API key).
         params (dict): Query parameters for the WFS request.
+        timeout (int, optional): Timeout for the request in seconds. Default is 30.
 
     Returns:
         dict: The JSON response from the WFS service for the page.
@@ -62,9 +64,7 @@ def _fetch_single_page_data(url: str, headers: dict, params: dict, timeout=30) -
     """
     try:
         logger.debug(f"Requesting WFS data. URL: {url}, Params: {params}")
-        response = requests.get(
-            url, headers=headers, params=params, timeout=timeout
-        )  
+        response = requests.get(url, headers=headers, params=params, timeout=timeout)
         response.raise_for_status()
         json_data = response.json()
         logger.debug(
@@ -95,37 +95,30 @@ def download_wfs_data(
     api_key: str,
     srsName: str = DEFAULT_SRSNAME,
     cql_filter: str = None,
-    count = None,
+    count=None,
     page_count: int = DEFAULT_PAGE_COUNT,
-    **other_wfs_params,
+    **other_wfs_params: Any,
 ) -> dict:
     """
     Downloads features from a WFS service, handling pagination and retries.
 
-    The function returns a GeoJSON FeatureCollection-like dictionary.
-
-    Args:
+    Parameters:
         url (str): The base URL of the WFS service (e.g., "https://data.linz.govt.nz/services/wfs").
+        typeNames (str): The typeNames for the desired layer (e.g., "layer-12345").
         api_key (str): API key.
-        typeNames (str): The typeNames for the desired layer. (e.g., "layer-12345").
-        srsName (str, optional): Spatial Reference System name (e.g., "EPSG:2193").
-                                Defaults to "EPSG:2193".
-        cql_filter (str, optional): CQL filter to apply to the WFS request.
-            Defaults to None. 
+        srsName (str, optional): Spatial Reference System name (e.g., "EPSG:2193"). Defaults to "EPSG:2193".
+        cql_filter (str, optional): CQL filter to apply to the WFS request. Defaults to None.
         count (int, optional): Maximum number of features to fetch.
-        **other_wfs_params: Additional WFS parameters (e.g., cql_filter="id='AL215'").
-                            These are passed directly to the WFS request.
+        page_count (int, optional): Number of features per page request. Defaults to DEFAULT_PAGE_COUNT.
+        **other_wfs_params: Additional WFS parameters.
 
     Returns:
         dict: A GeoJSON FeatureCollection-like dictionary containing all fetched features.
-            Example: {"type": "FeatureCollection", "features": [...], "crs": {...}, "numberMatched": X}
 
     Raises:
-        WfsDownloaderError: If the API key or layer_id is missing, or if data
-                                fetching fails after all retries (e.g., due to persistent
-                                network issues or non-transient API errors).
+        WfsDownloaderError: If the API key or layer_id is missing, or if data fetching fails after all retries.
     """
-    
+
     if not api_key:
         raise WfsDownloaderError("API key must be provided.")
     if not typeNames:
@@ -163,9 +156,7 @@ def download_wfs_data(
         }
 
         try:
-            page_data = _fetch_single_page_data(
-                url, headers, wfs_request_params
-            )
+            page_data = _fetch_single_page_data(url, headers, wfs_request_params)
         except WfsBadRequestError as e:
             logger.error(f"### Bad request error: {e}")
             raise
