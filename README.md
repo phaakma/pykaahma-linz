@@ -4,7 +4,7 @@ A Pythonic client for accessing and querying datasets from the LINZ Data Service
 ## Overview  
 pykaahma-linz is a Python package that provides a clean, Pythonic interface to the Koordinates geospatial content management system. It allows users to connect to the Koordinates API, retrieve metadata, and query datasets such as vector layers, tables, rasters, and point clouds. As the name indicates, this was written with LINZ (Land Information New Zealand) in mind and simplifies programmatic access to their open geospatial data. 
 
-Source code and documentation available at [Github repo](https://github.com/phaakma/pykaahma-linz)  
+Documentation available at [Github Pages documentation website](https://phaakma.github.io/pykaahma-linz/)  
 
 ## Disclaimer  
 This is a hobby project and the modules are provided as-is on a best-effort basis and you assume all risk for using it.  

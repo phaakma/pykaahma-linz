@@ -1,6 +1,6 @@
 [project]
 name = "pykaahma-linz"
-version = "0.1.8"
+version = "0.1.10"
 description = "A Pythonic client for accessing and querying datasets from the LINZ Data Service."
 keywords = [ "kaahma", "koordinates", "LINZ", "geospatial", "open data", "API", "GIS",]
 readme = "README.md"
